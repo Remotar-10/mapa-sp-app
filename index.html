@@ -1,759 +1,513 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mapa Interativo - São Paulo 645 Municípios</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Interativo - São Paulo 645 Municípios</title>
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    <style>
+        margin: 0; padding: 0; box-sizing: border-box; body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a1a; height: 100vh; overflow: hidden; }
+        #map { width: 100%; height: 100%; }
 
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #1a1a1a;
-      height: 100vh;
-      overflow: hidden;
-    }
+        .city-label {
+            background: linear-gradient(135deg, #FF6600 0%, #FF8533 100%);
+            color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 18px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); white-space: nowrap; text-align: center; border: 2px solid white; z-index: 500;
+        }
 
-    #map {
-      width: 100%;
-      height: 100%;
-    }
+        .header {
+            position: absolute; top: 20px; left: 20px; background: white; padding: 20px; border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); z-index: 1000; max-width: 400px;
+        }
+        .header h1 { margin: 0 0 10px 0; font-size: 18px; color: #1e3a8a; }
+        .header p { margin: 5px 0; font-size: 13px; color: #666; }
 
-    .city-label {
-      background: linear-gradient(135deg, #FF6600 0%, #FF8533 100%);
-      color: white;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 18px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      white-space: nowrap;
-      text-align: center;
-      border: 2px solid white;
-      z-index: 500;
-    }
+        .legenda {
+            position: absolute; top: 20px; right: 20px; background: white; padding: 15px; border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); z-index: 1000; font-size: 12px; max-width: 320px;
+        }
+        .legenda h3 { margin: 0 0 10px 0; font-size: 14px; color: #1e3a8a; }
+        .legenda-item { display: flex; align-items: center; margin-bottom: 8px; }
 
-    .header {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      z-index: 1000;
-      max-width: 400px;
-    }
+        .info-box {
+            position: absolute; bottom: 20px; left: 20px; background: white; padding: 0; border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); z-index: 1000; max-width: 380px; display: none; overflow: hidden;
+        }
+        .info-box-header { background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); color: white; padding: 18px; position: relative; }
+        .info-box-header h2 { margin: 0; font-size: 24px; font-weight: bold; }
+        .info-box-header p { margin: 8px 0 0 0; font-size: 12px; opacity: 0.9; }
 
-    .header h1 {
-      margin: 0 0 10px 0;
-      font-size: 18px;
-      color: #1e3a8a;
-    }
+        .close-btn {
+            position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.2); border: none; font-size: 24px; cursor: pointer; color: white;
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; transition: background 0.2s;
+        }
+        .close-btn:hover { background: rgba(255, 255, 255, 0.3); }
 
-    .header p {
-      margin: 5px 0;
-      font-size: 13px;
-      color: #666;
-    }
+        .info-box-content { padding: 18px; }
+        .info-row { margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .info-row:last-child { margin-bottom: 0; }
+        .info-label { font-weight: 600; color: #1e3a8a; font-size: 14px; min-width: 110px; }
+        .info-value { color: #333; font-size: 14px; font-weight: 500; }
+        .info-value.empty { color: #999; font-style: italic; }
 
-    .legenda {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      z-index: 1000;
-      font-size: 12px;
-      max-width: 320px;
-    }
+        .info-box .button-group { margin-top: 16px; display: flex; gap: 8px; }
+        .info-box button {
+            flex: 1; padding: 10px 14px; background: #1e3a8a; color: white; border: none; border-radius: 4px;
+            cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.2s;
+        }
+        .info-box button:hover { background: #152d6b; }
+        .info-box button.secondary { background: #4B5563; }
+        .info-box button.secondary:hover { background: #3d4451; }
 
-    .legenda h3 {
-      margin: 0 0 10px 0;
-      font-size: 14px;
-      color: #1e3a8a;
-    }
+        .loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 20px 30px; border-radius: 8px; z-index: 2000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); max-width: 500px; text-align: center;
+        }
 
-    .legenda-item {
-      display: flex;
-      align-items: center;
-      margin-bottom: 8px;
-    }
+        .search-box {
+            position: absolute; bottom: 20px; right: 20px; background: white; padding: 10px;
+            border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); z-index: 1000;
+        }
+        .search-box input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 200px; font-size: 12px; }
 
-    .info-box {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      background: white;
-      padding: 0;
-      border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-      z-index: 1000;
-      max-width: 380px;
-      display: none;
-      overflow: hidden;
-    }
-
-    .info-box-header {
-      background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
-      color: white;
-      padding: 18px;
-      position: relative;
-    }
-
-    .info-box-header h2 {
-      margin: 0;
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    .info-box-header p {
-      margin: 8px 0 0 0;
-      font-size: 12px;
-      opacity: 0.9;
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(255, 255, 255, 0.2);
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: white;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 4px;
-      transition: background 0.2s;
-    }
-
-    .close-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    .info-box-content {
-      padding: 18px;
-    }
-
-    .info-row {
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .info-row:last-child {
-      margin-bottom: 0;
-    }
-
-    .info-label {
-      font-weight: 600;
-      color: #1e3a8a;
-      font-size: 14px;
-      min-width: 110px;
-    }
-
-    .info-value {
-      color: #333;
-      font-size: 14px;
-      font-weight: 500;
-    }
-
-    .info-value.empty {
-      color: #999;
-      font-style: italic;
-    }
-
-    .info-box .button-group {
-      margin-top: 16px;
-      display: flex;
-      gap: 8px;
-    }
-
-    .info-box button {
-      flex: 1;
-      padding: 10px 14px;
-      background: #1e3a8a;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 500;
-      transition: background 0.2s;
-    }
-
-    .info-box button:hover {
-      background: #152d6b;
-    }
-
-    .info-box button.secondary {
-      background: #4B5563;
-    }
-
-    .info-box button.secondary:hover {
-      background: #3d4451;
-    }
-
-    .loading {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      padding: 20px 30px;
-      border-radius: 8px;
-      z-index: 2000;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      max-width: 500px;
-      text-align: center;
-    }
-
-    .search-box {
-      position: absolute;
-      bottom: 20px;
-      right: 20px;
-      background: white;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      z-index: 1000;
-    }
-
-    .search-box input {
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      width: 200px;
-      font-size: 12px;
-    }
-
-    .search-results {
-      position: absolute;
-      bottom: 55px;
-      right: 20px;
-      background: white;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      z-index: 1000;
-      max-height: 200px;
-      overflow-y: auto;
-      display: none;
-      max-width: 220px;
-    }
-
-    .search-results p {
-      margin: 5px 0;
-      cursor: pointer;
-      padding: 5px;
-      border-radius: 4px;
-      font-size: 12px;
-    }
-
-    .search-results p:hover {
-      background: #f0f0f0;
-    }
-  </style>
+        .search-results {
+            position: absolute; bottom: 55px; right: 20px; background: white; padding: 10px;
+            border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); z-index: 1000;
+            max-height: 200px; overflow-y: auto; display: none; max-width: 220px;
+        }
+        .search-results p { margin: 5px 0; cursor: pointer; padding: 5px; border-radius: 4px; font-size: 12px; }
+        .search-results p:hover { background: #f0f0f0; }
+    </style>
 </head>
 <body>
-  <div id="map"></div>
 
-  <div class="loading" id="loading">
-    <p>⏳ Carregando mapa...</p>
-    <p id="status" style="font-size: 12px; color: #666; margin-top: 10px;"></p>
-  </div>
+    <div id="map"></div>
 
-  <div class="header">
-    <h1>🗺️ São Paulo</h1>
-    <p><strong>645 Municípios</strong></p>
-    <p style="color: #1e3a8a; margin-top: 10px;">📍 Clique para abrir a cidade!</p>
-  </div>
+    <div class="loading" id="loading">
+        <p>Carregando mapa...</p>
+        <p id="status" style="font-size: 12px; color: #666; margin-top: 10px;"></p>
+    </div>
 
-  <div class="legenda">
-    <h3>Como usar</h3>
-    <div class="legenda-item">
-      <span>📍 <strong>1 click</strong> = Abre direto com contorno</span>
+    <div class="header">
+        <h1>São Paulo</h1>
+        <p><strong>645 Municípios</strong></p>
+        <p style="color: #1e3a8a; margin-top: 10px;">📍 Clique para abrir a cidade!</p>
     </div>
-    <div class="legenda-item">
-      <span>🏙️ Vê a cidade com todas as informações</span>
-    </div>
-    <div class="legenda-item">
-      <span>🔍 Use a barra de busca para encontrar</span>
-    </div>
-    <div class="legenda-item">
-      <span>🎨 Contorno em laranja = limite da cidade</span>
-    </div>
-  </div>
 
-  <div class="info-box" id="infoBox">
-    <div class="info-box-header">
-      <button class="close-btn" onclick="voltarMapa()">✕</button>
-      <h2 id="municipioNome">Município</h2>
-      <p id="municipioInfo">Carregando informações...</p>
+    <div class="legenda">
+        <h3>Como usar</h3>
+        <div class="legenda-item"><span>📍 <strong>1 click</strong> = Abre direto com contorno</span></div>
+        <div class="legenda-item"><span>🗺️ Vê a cidade com todas as informações</span></div>
+        <div class="legenda-item"><span>🔍 Use a barra de busca para encontrar</span></div>
+        <div class="legenda-item"><span>🔴 Contorno em laranja = limite da cidade</span></div>
     </div>
-    <div class="info-box-content">
-      <div class="info-row">
-        <span class="info-label">Código IBGE:</span>
-        <span class="info-value" id="municipioCodigo">-</span>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Região:</span>
-        <span class="info-value" id="municipioRegiao">Não informado</span>
-      </div>
-      <div class="info-row">
-        <span class="info-label">Área:</span>
-        <span class="info-value"><span id="municipioArea">-</span> km²</span>
-      </div>
-      <div class="button-group">
-        <button class="secondary" onclick="voltarMapa()">⏮️ Voltar para SP</button>
-      </div>
-    </div>
-  </div>
 
-  <div class="search-box">
-    <input type="text" id="searchInput" placeholder="Buscar município..." onkeyup="buscarMunicipio()" />
+    <div class="info-box" id="infoBox">
+        <div class="info-box-header">
+            <button class="close-btn" onclick="voltarMapa()">×</button>
+            <h2 id="municipioNome">Município</h2>
+            <p id="municipioInfo">Carregando informações...</p>
+        </div>
+        <div class="info-box-content">
+            <div class="info-row"><span class="info-label">Código IBGE:</span> <span class="info-value" id="municipioCodigo">-</span></div>
+            <div class="info-row"><span class="info-label">Região:</span> <span class="info-value" id="municipioRegiao">Não informado</span></div>
+            <div class="info-row"><span class="info-label">Área:</span> <span class="info-value"><span id="municipioArea">-</span> km²</span></div>
+            <div class="button-group">
+                <button class="secondary" onclick="voltarMapa()">Voltar para SP</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Buscar município..." onkeyup="buscarMunicipio()">
+    </div>
     <div class="search-results" id="searchResults"></div>
-  </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let mapa;
+        let geoJsonLayer;
+        let todosOsMunicipios = {};
+        let municipiosData = {};
+        let zoomAtual = "sp"; 
+        let mapaAberto = "state"; 
+        let municipioAtual = null;
+        let cityOutlineLayer = null;
+        let featureAtual = null; 
+        let contournoLayer = null; 
+        let cityNameMarker = null;
 
-  <script>
-    let mapa;
-    let geoJsonLayer;
-    let todosOsMunicipios = {};
-    let municipiosData = {};
-    let zoomAtual = 'sp';
-    let mapaAberto = 'state';
-    let municipioAtual = null;
-    let cityOutlineLayer = null;
-    let featureAtual = null;
-    let contournoLayer = null;
-    let cityNameMarker = null;
-    
-    const ARQUIVOS_CONTORNO = ['sp.json', 'sp', 'SP.json', 'SP'];
-    const ARQUIVOS_MUNICIPIOS = ['municipios.json', 'SP_Municipios_2023.geojson', 'SP_Municipios_2023.json', 'municipios.geojson'];
-    
-    const CORES_SUPER = [
-      '#FF0000', '#FF7F00', '#FFFF00', '#00FF00', '#0000FF',
-      '#4B0082', '#9400D3', '#FF1493', '#00CED1', '#32CD32',
-      '#FF4500', '#FFD700', '#00FA9A', '#00B0FF', '#FF6347',
-      '#FF69B4', '#1E90FF', '#00FFFF', '#00FF00', '#00FFFF',
-      '#FF00FF', '#00FF7F', '#FF0080', '#7FFF00', '#00FF80',
-      '#FF8000', '#0080FF', '#80FF00', '#FF0000', '#0000FF',
-      '#800080', '#FF8888', '#88FF88', '#8888FF', '#88FFFF',
-      '#FFFF88', '#FF88FF', '#FF00FF', '#00FFFF', '#FFFF00',
-      '#E91E63', '#9C27B0', '#673AB7', '#3F51B5', '#2196F3',
-      '#00BCD4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39',
-      '#FDD835', '#FBC02D', '#FFA000', '#FF6F00', '#FF5722',
-      '#795548', '#78909C', '#9E9E9E', '#607D8B', '#424242'
-    ];
+        const ARQUIVOS_CONTORNO = ["sp.json", "sp", "SP.json", "SP"];
+        const ARQUIVOS_MUNICIPIOS = ["municipios.json", "SP_Municipios_2023.geojson", "SP_Municipios_2023.json", "municipios.geojson"];
+        
+        const CORES_SUPER = [
+           "#FF0000", "#FF7F00", "#FFFF00", "#00FF00", "#0000FF", "#4B0082", "#9400D3",
+           "#FF1493", "#00CED1", "#32CD32", "#FF4500", "#FFD700", "#00FA9A", "#00B0FF",
+           "#FF6347", "#FF69B4", "#1E90FF", "#00FFFF", "#00FF00", "#00FFFF", "#FF00FF",
+           "#00FF7F", "#FF0080", "#7FFF00", "#00FF80", "#FF8000", "#0080FF", "#80FF00",
+           "#FF0000", "#0000FF", "#800080", "#FF8888", "#88FF88", "#8888FF", "#88FFFF",
+           "#FFFF88", "#FF88FF", "#FF00FF", "#00FFFF", "#FFFF00", "#E91E63", "#9C27B0",
+           "#673AB7", "#3F51B5", "#2196F3", "#00BCD4", "#009688", "#4CAF50", "#8BC34A",
+           "#CDDC39", "#FDD835", "#FBC02D", "#FFA000", "#FF6F00", "#FF5722", "#795548",
+           "#78909C", "#9E9E9E", "#607D8B", "#424242"
+        ];
 
-    function atualizarStatus(msg) {
-      document.getElementById('status').textContent = msg;
-      console.log(msg);
-    }
-
-    function gerarCorHSL(index, total = 645) {
-      const hue = (index * 360 / total) % 360;
-      const saturation = 70 + Math.random() * 20;
-      const lightness = 50 + Math.random() * 15;
-      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-    }
-
-    async function tentarCarregar(nomes) {
-      for (let nome of nomes) {
-        try {
-          atualizarStatus(`🔍 Tentando: ${nome}`);
-          const response = await fetch(nome);
-          if (response.ok) {
-            atualizarStatus(`✅ Encontrado: ${nome}`);
-            return await response.json();
-          }
-        } catch (e) {
-          console.log(`Tentativa falhou: ${nome}`);
+        function atualizarStatus(msg) {
+            document.getElementById('status').textContent = msg;
+            console.log(msg);
         }
-      }
-      return null;
-    }
 
-    async function initMap() {
-      mapa = L.map('map').setView([-22.5, -48], 7);
+        function gerarCorHSL(index, total = 645) {
+            const hue = (index * 360 / total) % 360;
+            const saturation = 70 + Math.random() * 20; 
+            const lightness = 50 + Math.random() * 15; 
+            return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+        }
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap contributors',
-      }).addTo(mapa);
-
-      atualizarStatus('🔄 Carregando contorno...');
-      await carregarContornoSP();
-      
-      atualizarStatus('🔄 Carregando municípios...');
-      await carregarGeoJSON();
-
-      console.log('✅ Mapa carregado!');
-    }
-
-    async function carregarContornoSP() {
-      const data = await tentarCarregar(ARQUIVOS_CONTORNO);
-      
-      if (!data) {
-        atualizarStatus('❌ Contorno não encontrado!');
-        return;
-      }
-
-      try {
-        let features = data.features || [];
-        if (features.length > 0) {
-          const feature = features[0];
-          
-          contournoLayer = L.geoJSON(feature, {
-            style: {
-              color: '#000000',
-              weight: 3,
-              opacity: 1,
-              fill: false,
-              lineCap: 'round',
-              lineJoin: 'round'
+        async function tentarCarregar(nomes) {
+            for (let nome of nomes) {
+                try {
+                    atualizarStatus(`Tentando: ${nome}...`);
+                    const response = await fetch(nome);
+                    if (response.ok) {
+                        atualizarStatus(`Encontrado: ${nome}`);
+                        return await response.json();
+                    }
+                } catch (e) {
+                    console.log(`Tentativa falhou: ${nome}`);
+                }
             }
-          }).addTo(mapa);
-
-          atualizarStatus('✅ Contorno desenhado');
-        }
-      } catch (error) {
-        atualizarStatus('❌ Erro ao desenhar contorno: ' + error.message);
-      }
-    }
-
-    async function carregarGeoJSON() {
-      const data = await tentarCarregar(ARQUIVOS_MUNICIPIOS);
-      
-      if (!data) {
-        atualizarStatus('❌ Arquivo de municípios não encontrado!');
-        return;
-      }
-
-      try {
-        let features = [];
-        
-        if (data.type === 'GeometryCollection' && data.geometries) {
-          console.log(`🔄 Convertendo ${data.geometries.length} geometrias...`);
-          features = data.geometries.map((geom, idx) => ({
-            type: 'Feature',
-            properties: {
-              NM_MUN: `Município ${idx + 1}`,
-              CD_MUN: idx + 1,
-              id: idx
-            },
-            geometry: geom
-          }));
-        } 
-        else if (data.type === 'FeatureCollection' && data.features) {
-          features = data.features;
-        }
-        else if (Array.isArray(data)) {
-          features = data;
-        }
-        
-        if (!features || features.length === 0) {
-          atualizarStatus('❌ Nenhuma geometria encontrada no arquivo!');
-          return;
+            return null;
         }
 
-        console.log(`✅ Carregado ${features.length} municípios`);
-        atualizarStatus(`✅ Renderizando ${features.length} municípios...`);
-
-        const coresEmbaralhadas = [...CORES_SUPER];
-        for (let i = coresEmbaralhadas.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [coresEmbaralhadas[i], coresEmbaralhadas[j]] = [coresEmbaralhadas[j], coresEmbaralhadas[i]];
-        }
-
-        let indiceColor = 0;
-
-        function getStyle(feature) {
-          let cor;
-          
-          if (indiceColor < CORES_SUPER.length) {
-            cor = coresEmbaralhadas[indiceColor];
-          } else {
-            cor = gerarCorHSL(indiceColor, features.length);
-          }
-          
-          indiceColor++;
-          
-          return {
-            fillColor: cor,
-            weight: 2,
-            opacity: 1,
-            color: '#ffffff',
-            fillOpacity: 0.9,
-          };
-        }
-
-        function highlightFeature(e) {
-          const layer = e.target;
-          layer.setStyle({
-            weight: 3,
-            color: '#000',
-            fillOpacity: 1,
-          });
-          layer.bringToFront();
-        }
-
-        function resetHighlight(e) {
-          geoJsonLayer.resetStyle(e.target);
-        }
-
-        function onFeatureClick(e) {
-          const props = e.target.feature.properties;
-          const layer = e.target;
-          
-          featureAtual = e.target.feature;
-          
-          municipiosData[props.NM_MUN || 'Unknown'] = {
-            feature: e.target.feature,
-            bounds: layer.getBounds(),
-            center: layer.getBounds().getCenter()
-          };
-          
-          municipioAtual = {
-            nome: props.NM_MUN,
-            codigo: props.CD_MUN,
-            regiao: props.NM_MICRO || props.NM_MESO || props.NM_IMEDIAT || props.REGIAO || null,
-            area: props.AREA_KM2 || props.AREA || null,
-            center: layer.getBounds().getCenter(),
-            bounds: layer.getBounds()
-          };
-          
-          abrirCidadeAutomatica();
-        }
-
-        function onEachFeature(feature, layer) {
-          const nomeMun = feature.properties?.NM_MUN || 'Desconhecido';
-          todosOsMunicipios[nomeMun] = feature.properties || {};
-
-          layer.on({
-            mouseover: highlightFeature,
-            mouseout: resetHighlight,
-            click: onFeatureClick,
-          });
-        }
-
-        const geoJsonData = {
-          type: 'FeatureCollection',
-          features: features
-        };
-
-        geoJsonLayer = L.geoJSON(geoJsonData, {
-          style: getStyle,
-          onEachFeature: onEachFeature,
-        }).addTo(mapa);
-
-        mapa.fitBounds(geoJsonLayer.getBounds());
-        document.getElementById('loading').style.display = 'none';
-        atualizarStatus(`✅ Mapa pronto com ${features.length} municípios!`);
-
-      } catch (error) {
-        atualizarStatus('❌ Erro ao carregar: ' + error.message);
-        console.error('Erro:', error);
-      }
-    }
-
-    function mostrarInfoMunicipio(props) {
-      const nome = props.NM_MUN || 'Desconhecido';
-      const codigo = props.CD_MUN || '-';
-      
-      // Tenta encontrar a região com fallbacks
-      let regiao = props.NM_MICRO || props.NM_MESO || props.NM_IMEDIAT || props.REGIAO || 'Interior de SP';
-      
-      // Garante que região nunca seja vazia
-      if (!regiao || regiao === '' || regiao === '-') {
-        regiao = 'Interior de SP';
-      }
-      
-      const area = props.AREA_KM2 || props.AREA || '-';
-
-      document.getElementById('municipioNome').textContent = nome;
-      document.getElementById('municipioCodigo').textContent = codigo;
-      document.getElementById('municipioRegiao').textContent = regiao;
-      document.getElementById('municipioArea').textContent =
-        typeof area === 'number' ? area.toFixed(2) : area;
-      document.getElementById('municipioInfo').textContent = `Código: ${codigo} • Área: ${typeof area === 'number' ? area.toFixed(0) : area} km²`;
-
-      document.getElementById('infoBox').style.display = 'block';
-    }
-
-    function abrirCidadeAutomatica() {
-      if (!featureAtual) return;
-      
-      if (geoJsonLayer) {
-        mapa.removeLayer(geoJsonLayer);
-      }
-
-      if (contournoLayer) {
-        mapa.removeLayer(contournoLayer);
-      }
-
-      if (cityNameMarker) {
-        mapa.removeLayer(cityNameMarker);
-        cityNameMarker = null;
-      }
-      
-      cityOutlineLayer = L.geoJSON(featureAtual, {
-        style: {
-          color: '#FF6600',
-          weight: 4,
-          opacity: 1,
-          fill: true,
-          fillColor: '#FF6600',
-          fillOpacity: 0.15,
-          lineCap: 'round',
-          lineJoin: 'round'
-        }
-      }).addTo(mapa);
-
-      mostrarInfoMunicipio(featureAtual.properties);
-
-      const bounds = municipioAtual.bounds;
-      mapa.fitBounds(bounds, { 
-        padding: [80, 80],
-        maxZoom: 16,
-        animate: true,
-        duration: 1
-      });
-
-      setTimeout(() => {
-        const center = municipioAtual.center;
-        
-        const cityLabelDiv = document.createElement('div');
-        cityLabelDiv.className = 'city-label';
-        cityLabelDiv.textContent = municipioAtual.nome;
-
-        cityNameMarker = L.marker(center, {
-          icon: L.divIcon({
-            html: cityLabelDiv,
-            className: '',
-            iconSize: [auto, auto],
-            iconAnchor: [0, -15],
-            popupAnchor: [0, 0]
-          })
-        }).addTo(mapa);
-      }, 600);
-      
-      mapaAberto = 'city-streets';
-      
-      document.querySelector('.header h1').textContent = `🏙️ ${municipioAtual.nome}`;
-      document.querySelector('.header p:nth-child(2)').textContent = `📍 ${municipioAtual.regiao}`;
-    }
-
-    function voltarMapa() {
-      document.getElementById('infoBox').style.display = 'none';
-      
-      if (cityNameMarker) {
-        mapa.removeLayer(cityNameMarker);
-        cityNameMarker = null;
-      }
-      
-      if (cityOutlineLayer) {
-        mapa.removeLayer(cityOutlineLayer);
-        cityOutlineLayer = null;
-      }
-      
-      if (!contournoLayer) {
-        tentarCarregar(ARQUIVOS_CONTORNO).then(data => {
-          if (data && data.features && data.features.length > 0) {
-            contournoLayer = L.geoJSON(data.features[0], {
-              style: {
-                color: '#000000',
-                weight: 3,
-                opacity: 1,
-                fill: false,
-                lineCap: 'round',
-                lineJoin: 'round'
-              }
+        async function initMap() {
+            mapa = L.map('map').setView([-22.5, -48], 7);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap contributors'
             }).addTo(mapa);
-          }
+
+            atualizarStatus("Carregando contorno...");
+            await carregarContornoSP();
+
+            atualizarStatus("Carregando municípios...");
+            await carregarGeoJSON();
+
+            console.log("Mapa carregado!");
+        }
+
+        async function carregarContornoSP() {
+            const data = await tentarCarregar(ARQUIVOS_CONTORNO);
+            if (!data) {
+                atualizarStatus("Contorno não encontrado!");
+                return;
+            }
+            try {
+                let features = data.features;
+                if (features.length > 0) {
+                     const feature = features[0];
+                     contournoLayer = L.geoJSON(feature, {
+                        style: { color: "#000000", weight: 3, opacity: 1, fill: false, lineCap: "round", lineJoin: "round" }
+                    }).addTo(mapa);
+                    atualizarStatus("Contorno desenhado");
+                }
+            } catch (error) {
+                atualizarStatus("Erro ao desenhar contorno: " + error.message);
+            }
+        }
+
+        async function carregarGeoJSON() {
+            const data = await tentarCarregar(ARQUIVOS_MUNICIPIOS);
+            if (!data) {
+                atualizarStatus("Arquivo de municípios não encontrado!");
+                return;
+            }
+
+            try {
+                let features;
+                if (data.type === "GeometryCollection" && data.geometries) {
+                    console.log(`Convertendo ${data.geometries.length} geometrias...`);
+                    features = data.geometries.map((geom, idx) => ({
+                        type: "Feature",
+                        properties: { NMMUN: `Município ${idx + 1}`, CDMUN: idx + 1, id: idx },
+                        geometry: geom
+                    }));
+                } else if (data.type === "FeatureCollection" && data.features) {
+                    features = data.features;
+                } else if (Array.isArray(data)) {
+                    features = data;
+                }
+
+                if (!features || features.length === 0) {
+                    atualizarStatus("Nenhuma geometria encontrada no arquivo!");
+                    return;
+                }
+
+                console.log(`Carregado ${features.length} municípios`);
+                atualizarStatus(`Renderizando ${features.length} municípios...`);
+
+                const coresEmbaralhadas = [...CORES_SUPER];
+                for (let i = coresEmbaralhadas.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [coresEmbaralhadas[i], coresEmbaralhadas[j]] = [coresEmbaralhadas[j], coresEmbaralhadas[i]];
+                }
+
+                let indiceColor = 0;
+
+                function getStyle(feature) {
+                    let cor;
+                    if (indiceColor < CORES_SUPER.length) {
+                         cor = coresEmbaralhadas[indiceColor];
+                    } else {
+                         cor = gerarCorHSL(indiceColor, features.length);
+                    }
+                    indiceColor++;
+
+                    return {
+                        fillColor: cor, weight: 2, opacity: 1, color: '#ffffff', fillOpacity: 0.9
+                    };
+                }
+
+                function highlightFeature(e) {
+                    const layer = e.target;
+                    layer.setStyle({ weight: 3, color: '#000', fillOpacity: 1 });
+                    layer.bringToFront();
+                }
+
+                function resetHighlight(e) {
+                    geoJsonLayer.resetStyle(e.target);
+                }
+
+                function onFeatureClick(e) {
+                    const props = e.target.feature.properties;
+                    const layer = e.target;
+
+                    featureAtual = e.target.feature;
+                    if (municipiosData[props.NMMUN || "Unknown"]) {
+                         featureAtual = e.target.feature;
+                    }
+
+                    municipioAtual = {
+                        nome: props.NMMUN,
+                        codigo: props.CDMUN,
+                        regiao: props.NMMICRO || props.NMMESO || props.NMIMEDIAT || props.REGIAO || null,
+                        area: props.AREAKM2 || props.AREA || null,
+                        center: layer.getBounds().getCenter(),
+                        bounds: layer.getBounds()
+                    };
+                    abrirCidadeAutomatica();
+                }
+
+                function onEachFeature(feature, layer) {
+                    const nomeMun = feature.properties?.NMMUN || "Desconhecido";
+                    todosOsMunicipios[nomeMun] = feature.properties;
+                    
+                    layer.on({
+                        mouseover: highlightFeature,
+                        mouseout: resetHighlight,
+                        click: onFeatureClick
+                    });
+                }
+
+                const geoJsonData = { type: "FeatureCollection", features: features };
+                geoJsonLayer = L.geoJSON(geoJsonData, {
+                    style: getStyle,
+                    onEachFeature: onEachFeature
+                }).addTo(mapa);
+
+                mapa.fitBounds(geoJsonLayer.getBounds());
+                document.getElementById('loading').style.display = 'none';
+                atualizarStatus(`Mapa pronto com ${features.length} municípios!`);
+
+            } catch (error) {
+                atualizarStatus("Erro ao carregar: " + error.message);
+                console.error("Erro:", error);
+            }
+        }
+
+        function mostrarInfoMunicipio(props) {
+            const nome = props.NMMUN || "Desconhecido";
+            const codigo = props.CDMUN || "-";
+            let regiao = props.NMMICRO || props.NMMESO || props.NMIMEDIAT || props.REGIAO || "Interior de SP";
+            if (!regiao) regiao = regiao || "regiao" || "Interior de SP";
+            const area = props.AREAKM2 || props.AREA || "-";
+
+            document.getElementById('municipioNome').textContent = nome;
+            document.getElementById('municipioCodigo').textContent = codigo;
+            document.getElementById('municipioRegiao').textContent = regiao;
+            document.getElementById('municipioArea').textContent = typeof area === 'number' ? area.toFixed(2) : area;
+            document.getElementById('municipioInfo').textContent = `Código: ${codigo} • Área: ${typeof area === 'number' ? area.toFixed(0) : area} km²`;
+
+            document.getElementById('infoBox').style.display = 'block';
+        }
+
+        function abrirCidadeAutomatica() {
+            if (!featureAtual) return;
+
+            if (geoJsonLayer) mapa.removeLayer(geoJsonLayer);
+            if (contournoLayer) mapa.removeLayer(contournoLayer);
+            if (cityNameMarker) { mapa.removeLayer(cityNameMarker); cityNameMarker = null; }
+
+            cityOutlineLayer = L.geoJSON(featureAtual, {
+                style: {
+                    color: '#FF6600', weight: 4, opacity: 1, fill: true, fillColor: '#FF6600', fillOpacity: 0.15, lineCap: "round", lineJoin: "round"
+                }
+            }).addTo(mapa);
+            
+            mostrarInfoMunicipio(featureAtual.properties);
+
+            const bounds = municipioAtual.bounds;
+            mapa.fitBounds(bounds, { padding: [80, 80], maxZoom: 16, animate: true, duration: 1 });
+
+            setTimeout(() => {
+                const center = municipioAtual.center;
+                const cityLabelDiv = document.createElement('div');
+                cityLabelDiv.className = 'city-label';
+                cityLabelDiv.textContent = municipioAtual.nome;
+
+                cityNameMarker = L.marker(center, {
+                    icon: L.divIcon({
+                        html: cityLabelDiv,
+                        className: '',
+                        iconSize: ['auto', 'auto'],
+                        iconAnchor: [0, -15],
+                        popupAnchor: [0, 0]
+                    })
+                }).addTo(mapa);
+            }, 600);
+
+            mapaAberto = "city-streets";
+            document.querySelector('.header h1').textContent = municipioAtual.nome;
+            document.querySelector('.header p:nth-child(2)').textContent = municipioAtual.regiao || "";
+        }
+
+        function voltarMapa() {
+            document.getElementById('infoBox').style.display = 'none';
+
+            if (cityNameMarker) { mapa.removeLayer(cityNameMarker); cityNameMarker = null; }
+            if (cityOutlineLayer) { mapa.removeLayer(cityOutlineLayer); cityOutlineLayer = null; }
+
+            if (!contournoLayer) {
+                 tentarCarregar(ARQUIVOS_CONTORNO).then(data => {
+                    if (data && data.features && data.features.length > 0) {
+                         contournoLayer = L.geoJSON(data.features[0], {
+                            style: { color: "#000000", weight: 3, opacity: 1, fill: false, lineCap: "round", lineJoin: "round" }
+                        }).addTo(mapa);
+                    }
+                 });
+            }
+
+            carregarGeoJSON();
+            mapa.flyTo([-22.5, -48], 7, { duration: 1 });
+
+            zoomAtual = "sp";
+            mapaAberto = "state";
+            municipioAtual = null;
+            featureAtual = null;
+
+            document.querySelector('.header h1').textContent = "São Paulo";
+            document.querySelector('.header p:nth-child(2)').textContent = "645 Municípios";
+        }
+
+        function procurarEFocarMunicipio(nome, props) {
+            document.getElementById('searchInput').value = nome;
+            document.getElementById('searchResults').style.display = 'none';
+            
+            // Atualiza dados atuais
+            municipioAtual = {
+                nome: props.NMMUN,
+                codigo: props.CDMUN,
+                regiao: props.NMMICRO || props.NMMESO || props.NMIMEDIAT || props.REGIAO || "Interior de SP",
+                area: props.AREAKM2 || props.AREA || "-",
+            };
+
+            // Encontra a feature para ter geometria
+            if (geoJsonLayer) {
+                geoJsonLayer.eachLayer(layer => {
+                    if (layer.feature.properties.NMMUN === nome) {
+                        featureAtual = layer.feature;
+                        municipioAtual.center = layer.getBounds().getCenter();
+                        municipioAtual.bounds = layer.getBounds();
+                    }
+                });
+            }
+            
+            if (featureAtual) {
+                setTimeout(() => {
+                    abrirCidadeAutomatica();
+                }, 100);
+            }
+        }
+
+        // Função para remover acentos (normalizar texto)
+        function removerAcentos(texto) {
+            return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        }
+
+        function buscarMunicipio() {
+            const termoInput = document.getElementById('searchInput').value;
+            const termo = removerAcentos(termoInput); 
+            const resultados = document.getElementById('searchResults');
+
+            if (termo.length < 2) {
+                resultados.style.display = 'none';
+                return;
+            }
+
+            const matches = Object.entries(todosOsMunicipios)
+                .filter(([nome, props]) => {
+                    const nomeNormalizado = removerAcentos(nome);
+                    return nomeNormalizado.includes(termo);
+                })
+                .slice(0, 10);
+
+            if (matches.length === 0) {
+                resultados.style.display = 'none';
+                return;
+            }
+
+            resultados.innerHTML = matches
+                .map(([nome, props]) => {
+                    // Escapa aspas para evitar erros no JSON inline
+                    const propsString = JSON.stringify(props).replace(/"/g, '&quot;');
+                    return `<p onclick="procurarEFocarMunicipio('${nome}', ${propsString})">${nome}</p>`;
+                })
+                .join('');
+
+            resultados.style.display = 'block';
+        }
+
+        function checarParametrosURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const cidadeAlvo = urlParams.get('visita'); // Pega o parametro ?visita=NomeDaCidade
+            
+            if (cidadeAlvo) {
+                // Pequeno delay para garantir que o JSON carregou
+                setTimeout(() => {
+                    const input = document.getElementById('searchInput');
+                    if(input) {
+                        input.value = cidadeAlvo;
+                        buscarMunicipio(); // Usa a nova busca inteligente
+                        
+                        // Tenta clicar no primeiro resultado automaticamente
+                        setTimeout(() => {
+                            const primeiroResultado = document.querySelector('.search-results p');
+                            if (primeiroResultado) primeiroResultado.click();
+                        }, 800);
+                    }
+                }, 2500); // Tempo seguro para carregar os dados do mapa
+            }
+        }
+
+        window.addEventListener('load', () => {
+            initMap();
+            setTimeout(checarParametrosURL, 1000);
         });
-      }
-      
-      carregarGeoJSON();
-      
-      mapa.flyTo([-22.5, -48], 7, { duration: 1 });
-      
-      zoomAtual = 'sp';
-      mapaAberto = 'state';
-      municipioAtual = null;
-      featureAtual = null;
-      
-      document.querySelector('.header h1').textContent = '🗺️ São Paulo';
-      document.querySelector('.header p:nth-child(2)').textContent = '645 Municípios';
-    }
 
-    function buscarMunicipio() {
-      const termo = document.getElementById('searchInput').value.toLowerCase();
-      const resultados = document.getElementById('searchResults');
-
-      if (termo.length < 2) {
-        resultados.style.display = 'none';
-        return;
-      }
-
-      const matches = Object.entries(todosOsMunicipios)
-        .filter(([nome]) => nome.toLowerCase().includes(termo))
-        .slice(0, 10);
-
-      if (matches.length === 0) {
-        resultados.style.display = 'none';
-        return;
-      }
-
-      resultados.innerHTML = matches
-        .map(
-          ([nome, props]) =>
-            `<p onclick="procurarEFocarMunicipio('${nome}', ${JSON.stringify(props).replace(/"/g, '&quot;')})">${nome}</p>`
-        )
-        .join('');
-
-      resultados.style.display = 'block';
-    }
-
-    function procurarEFocarMunicipio(nome, props) {
-      document.getElementById('searchInput').value = nome;
-      document.getElementById('searchResults').style.display = 'none';
-      
-      municipioAtual = {
-        nome: props.NM_MUN,
-        codigo: props.CD_MUN,
-        regiao: props.NM_MICRO || props.NM_MESO || props.NM_IMEDIAT || props.REGIAO || 'Interior de SP',
-        area: props.AREA_KM2 || props.AREA || '-'
-      };
-      
-      if (municipiosData[nome]) {
-        featureAtual = municipiosData[nome].feature;
-        municipioAtual.center = municipiosData[nome].center;
-        municipioAtual.bounds = municipiosData[nome].bounds;
-        setTimeout(() => {
-          abrirCidadeAutomatica();
-        }, 100);
-      }
-    }
-
-    window.addEventListener('load', initMap);
-  </script>
+    </script>
 </body>
 </html>
