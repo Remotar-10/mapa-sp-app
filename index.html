@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mapa SP - Funcionários Fantasia por Município</title>
+  <title>Mapa SP - Funcionários por Município</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
@@ -42,7 +42,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.25);
       z-index: 1000;
       font-size: 12px;
-      max-width: 230px;
+      max-width: 260px;
     }
     .legenda h3 {
       margin: 0 0 6px 0;
@@ -125,14 +125,22 @@
 
   <div class="header">
     <h1>São Paulo - Funcionários por Município</h1>
-    <p>Todos os municípios estão cobertos por um funcionário fantasia (ATIVO).</p>
+    <p>Cada município é colorido conforme a atividade dos funcionários.</p>
   </div>
 
   <div class="legenda">
     <h3>Legenda</h3>
     <div class="legenda-item">
       <span class="legenda-color" style="background:#2E7D32;"></span>
-      Município com funcionário ATIVO
+      Pelo menos 1 funcionário ATIVO
+    </div>
+    <div class="legenda-item">
+      <span class="legenda-color" style="background:#C62828;"></span>
+      Funcionários somente INATIVOS (nenhum ativo)
+    </div>
+    <div class="legenda-item">
+      <span class="legenda-color" style="background:#BDBDBD;"></span>
+      Nenhum funcionário no índice
     </div>
   </div>
 
@@ -141,6 +149,7 @@
     <p id="infoCodigo" class="small">Código IBGE: -</p>
     <p id="infoResumo">Nenhuma seleção ainda.</p>
     <p id="infoLista" class="small"></p>
+    <p id="infoAtualizado" class="small"></p>
   </div>
 
   <div class="search-box">
@@ -151,8 +160,9 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // Ajuste os caminhos se estiverem em subpastas
-    const SP_URL         = './sp.json';
-    const MUNICIPIOS_URL = './municipios.json';
+    const SP_URL          = './sp.json';
+    const MUNICIPIOS_URL  = './municipios.json';
+    const EMPREGADOS_URL  = './employee_index.json';
 
     // Mapa base
     const map = L.map('map').setView([-22.5, -48], 7);
@@ -166,6 +176,7 @@
 
     // código município -> { activeCount, totalCount, employees: [] }
     let activityByMunicipalityCode = new Map();
+    let employeeIndexRaw = null;
 
     // índice para busca: nome normalizado -> [{ nome, layer, bounds }]
     const municipiosPorNome = new Map();
@@ -185,56 +196,60 @@
         .trim();
     }
 
-    // Cria "funcionários" fantasia ATIVOS para TODOS os municípios do GeoJSON
-    function buildAllActiveIndexFromMunicipios(municipiosGeoJSON) {
+    // Constrói índice de atividade a partir do employee_index.json
+    // Suporta:
+    //  - municipalityCode (um município)
+    //  - municipalitiesServed (array de vários códigos), se você quiser usar
+    function buildMunicipalityActivityIndex(employeeIndex) {
       const map = new Map();
-      const features = Array.isArray(municipiosGeoJSON.features)
-        ? municipiosGeoJSON.features
-        : [];
+      if (!employeeIndex || !Array.isArray(employeeIndex.employees)) return map;
 
-      features.forEach((feature, idx) => {
-        const props = feature.properties || {};
+      for (const emp of employeeIndex.employees) {
+        const status = String(emp.status || '').toUpperCase();
 
-        // Tentativa de achar o código do município (ajuste aqui se seu campo tiver outro nome)
-        let rawCode =
-          props.CD_MUN  || props.cd_mun  || // mais comum
-          props.CD_GEOCMU || props.CD_IBGE || props.cod_ibge ||
-          '';
+        const codes = [];
 
-        const code = String(rawCode).trim();
-        if (!code) return; // sem código, ignora
+        if (emp.municipalityCode) {
+          codes.push(String(emp.municipalityCode).trim());
+        }
 
-        const nome =
-          props.NM_MUN || props.nm_mun || props.NOME || ('Município ' + code);
+        if (Array.isArray(emp.municipalitiesServed)) {
+          for (const c of emp.municipalitiesServed) {
+            const v = String(c || '').trim();
+            if (v) codes.push(v);
+          }
+        }
 
-        // Cria um funcionário fantasia
-        const emp = {
-          employeeId: 'E' + code,
-          employeeName: 'Agente ' + nome,
-          municipalityCode: code,
-          status: 'ACTIVE'
-        };
+        const uniqueCodes = Array.from(new Set(codes)).filter(Boolean);
 
-        map.set(code, {
-          activeCount: 1,
-          totalCount: 1,
-          employees: [emp]
-        });
-      });
+        for (const code of uniqueCodes) {
+          if (!map.has(code)) {
+            map.set(code, { activeCount: 0, totalCount: 0, employees: [] });
+          }
+          const entry = map.get(code);
+          entry.totalCount += 1;
+          if (status === 'ACTIVE') entry.activeCount += 1;
+          entry.employees.push(emp);
+        }
+      }
 
       return map;
     }
 
-    // Cor de preenchimento (aqui: tudo verde porque todos são ATIVOS)
+    // Cor de preenchimento de acordo com os dados do índice
     function getFillColorByActivity(entry) {
-      return '#2E7D32'; // verde para todos
+      if (!entry) return '#BDBDBD';         // sem dados
+      if (entry.activeCount > 0) return '#2E7D32';  // pelo menos 1 ativo
+      return '#C62828';                     // tem funcionário, mas nenhum ativo
     }
 
     // Estilo do município
     function styleMunicipio(feature) {
       const props = feature.properties || {};
+      // Tenta detectar automaticamente o campo de código do município.
+      // Se tiver outro nome no seu GeoJSON, ajuste aqui.
       const rawCode =
-        props.CD_MUN  || props.cd_mun  ||
+        props.CD_MUN   || props.cd_mun   ||
         props.CD_GEOCMU || props.CD_IBGE || props.cod_ibge || '';
       const code = String(rawCode).trim();
 
@@ -276,30 +291,37 @@
         props.NM_MUN || props.nm_mun || props.NOME || 'Município desconhecido';
 
       const rawCode =
-        props.CD_MUN  || props.cd_mun  ||
+        props.CD_MUN   || props.cd_mun   ||
         props.CD_GEOCMU || props.CD_IBGE || props.cod_ibge || '-';
       const code = String(rawCode).trim() || '-';
 
       const entry = activityByMunicipalityCode.get(code);
 
-      const infoNome   = document.getElementById('infoNome');
-      const infoCodigo = document.getElementById('infoCodigo');
-      const infoResumo = document.getElementById('infoResumo');
-      const infoLista  = document.getElementById('infoLista');
+      const infoNome       = document.getElementById('infoNome');
+      const infoCodigo     = document.getElementById('infoCodigo');
+      const infoResumo     = document.getElementById('infoResumo');
+      const infoLista      = document.getElementById('infoLista');
+      const infoAtualizado = document.getElementById('infoAtualizado');
 
       infoNome.textContent   = nome;
       infoCodigo.textContent = 'Código IBGE: ' + code;
 
       if (!entry) {
-        infoResumo.textContent = 'Nenhum dado de funcionário para este município.';
+        infoResumo.textContent = 'Nenhum funcionário cadastrado neste município no índice.';
         infoLista.textContent  = '';
       } else {
         infoResumo.textContent =
           `Funcionários ativos: ${entry.activeCount} / ${entry.totalCount}`;
         const nomes = entry.employees
-          .map(emp => `${emp.employeeName} (${emp.status})`)
+          .map(emp => `${emp.employeeName || emp.employeeId} (${emp.status || 'sem status'})`)
           .join('; ');
         infoLista.textContent = nomes ? 'Funcionários: ' + nomes : '';
+      }
+
+      if (employeeIndexRaw && employeeIndexRaw.updatedAt) {
+        infoAtualizado.textContent = 'Dados atualizados em: ' + employeeIndexRaw.updatedAt;
+      } else {
+        infoAtualizado.textContent = '';
       }
 
       const bounds = layer.getBounds();
@@ -342,13 +364,13 @@
           style: { color: '#000', weight: 3, fill: false }
         }).addTo(map);
 
+        // Índice de funcionários
+        employeeIndexRaw = await loadJSON(EMPREGADOS_URL);
+        activityByMunicipalityCode = buildMunicipalityActivityIndex(employeeIndexRaw);
+
         // Municípios
         const municipios = await loadJSON(MUNICIPIOS_URL);
 
-        // Cria índice de funcionários fantasia (todos ATIVOS)
-        activityByMunicipalityCode = buildAllActiveIndexFromMunicipios(municipios);
-
-        // Desenha municípios
         municipiosLayer = L.geoJSON(municipios, {
           style: styleMunicipio,
           onEachFeature: onEachMunicipio
@@ -392,7 +414,24 @@
       });
     });
 
-    init();
+    // Atualização periódica opcional do índice de funcionários
+    async function refreshEmployeeData() {
+      try {
+        const novoIndex = await loadJSON(EMPREGADOS_URL);
+        employeeIndexRaw = novoIndex;
+        activityByMunicipalityCode = buildMunicipalityActivityIndex(novoIndex);
+        if (municipiosLayer) {
+          municipiosLayer.setStyle(styleMunicipio);
+        }
+      } catch (err) {
+        console.error('Erro ao atualizar índice de funcionários:', err);
+      }
+    }
+
+    init().then(() => {
+      // Se quiser atualização automática do índice, descomente:
+      // setInterval(refreshEmployeeData, 60000); // a cada 60s
+    });
   </script>
 </body>
 </html>
