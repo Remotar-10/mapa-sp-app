@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mapa SP - Funcionários por Município</title>
+  <title>Mapa SP - Funcionários Fantasia por Município</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
@@ -125,22 +125,14 @@
 
   <div class="header">
     <h1>São Paulo - Funcionários por Município</h1>
-    <p>Clique em um município para ver detalhes de funcionários.</p>
+    <p>Todos os municípios estão cobertos por um funcionário fantasia (ATIVO).</p>
   </div>
 
   <div class="legenda">
     <h3>Legenda</h3>
     <div class="legenda-item">
       <span class="legenda-color" style="background:#2E7D32;"></span>
-      Pelo menos 1 funcionário ATIVO
-    </div>
-    <div class="legenda-item">
-      <span class="legenda-color" style="background:#C62828;"></span>
-      Funcionários somente INATIVOS (nenhum ativo)
-    </div>
-    <div class="legenda-item">
-      <span class="legenda-color" style="background:#BDBDBD;"></span>
-      Sem funcionários no índice
+      Município com funcionário ATIVO
     </div>
   </div>
 
@@ -149,7 +141,6 @@
     <p id="infoCodigo" class="small">Código IBGE: -</p>
     <p id="infoResumo">Nenhuma seleção ainda.</p>
     <p id="infoLista" class="small"></p>
-    <p id="infoAtualizado" class="small"></p>
   </div>
 
   <div class="search-box">
@@ -159,12 +150,11 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // URLs dos dados (ajuste se usar subpasta)
-    const SP_URL          = './sp.json';
-    const MUNICIPIOS_URL  = './municipios.json';
-    const EMPREGADOS_URL  = './employee_index.json';
+    // Ajuste os caminhos se estiverem em subpastas
+    const SP_URL         = './sp.json';
+    const MUNICIPIOS_URL = './municipios.json';
 
-    // Mapa e camadas
+    // Mapa base
     const map = L.map('map').setView([-22.5, -48], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
@@ -174,58 +164,80 @@
     let spOutlineLayer = null;
     let municipiosLayer = null;
 
-    // Índice: código município -> infos de funcionários
+    // código município -> { activeCount, totalCount, employees: [] }
     let activityByMunicipalityCode = new Map();
-    let employeeIndexRaw = null;
 
-    // Para busca: nome normalizado -> { feature, bounds }
+    // índice para busca: nome normalizado -> [{ nome, layer, bounds }]
     const municipiosPorNome = new Map();
 
-    // Util: carregar JSON
+    // Utilitário: carregar JSON
     async function loadJSON(url) {
       const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) throw new Error('Erro ao carregar ' + url + ': ' + res.status);
       return await res.json();
     }
 
-    // Construir índice de atividade por código de município
-    function buildMunicipalityActivityIndex(employeeIndex) {
+    // Normaliza string de nome (para busca)
+    function normalizeName(str) {
+      return String(str)
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toUpperCase()
+        .trim();
+    }
+
+    // Cria "funcionários" fantasia ATIVOS para TODOS os municípios do GeoJSON
+    function buildAllActiveIndexFromMunicipios(municipiosGeoJSON) {
       const map = new Map();
-      if (!employeeIndex || !Array.isArray(employeeIndex.employees)) return map;
+      const features = Array.isArray(municipiosGeoJSON.features)
+        ? municipiosGeoJSON.features
+        : [];
 
-      for (const emp of employeeIndex.employees) {
-        const code = String(emp.municipalityCode || '').trim();
-        if (!code) continue;
+      features.forEach((feature, idx) => {
+        const props = feature.properties || {};
 
-        if (!map.has(code)) {
-          map.set(code, {
-            activeCount: 0,
-            totalCount: 0,
-            employees: []
-          });
-        }
+        // Tentativa de achar o código do município (ajuste aqui se seu campo tiver outro nome)
+        let rawCode =
+          props.CD_MUN  || props.cd_mun  || // mais comum
+          props.CD_GEOCMU || props.CD_IBGE || props.cod_ibge ||
+          '';
 
-        const entry = map.get(code);
-        entry.totalCount += 1;
-        const status = String(emp.status || '').toUpperCase();
-        if (status === 'ACTIVE') entry.activeCount += 1;
-        entry.employees.push(emp);
-      }
+        const code = String(rawCode).trim();
+        if (!code) return; // sem código, ignora
+
+        const nome =
+          props.NM_MUN || props.nm_mun || props.NOME || ('Município ' + code);
+
+        // Cria um funcionário fantasia
+        const emp = {
+          employeeId: 'E' + code,
+          employeeName: 'Agente ' + nome,
+          municipalityCode: code,
+          status: 'ACTIVE'
+        };
+
+        map.set(code, {
+          activeCount: 1,
+          totalCount: 1,
+          employees: [emp]
+        });
+      });
 
       return map;
     }
 
-    // Cor de preenchimento de acordo com os dados do índice
+    // Cor de preenchimento (aqui: tudo verde porque todos são ATIVOS)
     function getFillColorByActivity(entry) {
-      if (!entry) return '#BDBDBD';      // sem dados
-      if (entry.activeCount > 0) return '#2E7D32';  // pelo menos 1 ativo
-      return '#C62828';                  // tem funcionário, mas nenhum ativo
+      return '#2E7D32'; // verde para todos
     }
 
-    // Style de município (usa CD_MUN como chave)
+    // Estilo do município
     function styleMunicipio(feature) {
-      // SEU CAMPO DE CÓDIGO AQUI (ajuste se precisar)
-      const code = String(feature?.properties?.CD_MUN || '').trim();
+      const props = feature.properties || {};
+      const rawCode =
+        props.CD_MUN  || props.cd_mun  ||
+        props.CD_GEOCMU || props.CD_IBGE || props.cod_ibge || '';
+      const code = String(rawCode).trim();
+
       const entry = activityByMunicipalityCode.get(code);
 
       return {
@@ -254,48 +266,47 @@
       if (municipiosLayer) municipiosLayer.resetStyle(e.target);
     }
 
-    // Atualizar info-box ao clicar
+    // Clique no município → atualiza info-box e dá zoom
     function onMunicipioClick(e) {
       const layer = e.target;
       const feature = layer.feature;
+      const props = feature.properties || {};
 
-      // SEU CAMPO DE NOME AQUI (ajuste se precisar)
-      const nome = feature?.properties?.NM_MUN || 'Município desconhecido';
-      const code = String(feature?.properties?.CD_MUN || '-');
+      const nome =
+        props.NM_MUN || props.nm_mun || props.NOME || 'Município desconhecido';
+
+      const rawCode =
+        props.CD_MUN  || props.cd_mun  ||
+        props.CD_GEOCMU || props.CD_IBGE || props.cod_ibge || '-';
+      const code = String(rawCode).trim() || '-';
 
       const entry = activityByMunicipalityCode.get(code);
-      const infoNome       = document.getElementById('infoNome');
-      const infoCodigo     = document.getElementById('infoCodigo');
-      const infoResumo     = document.getElementById('infoResumo');
-      const infoLista      = document.getElementById('infoLista');
-      const infoAtualizado = document.getElementById('infoAtualizado');
+
+      const infoNome   = document.getElementById('infoNome');
+      const infoCodigo = document.getElementById('infoCodigo');
+      const infoResumo = document.getElementById('infoResumo');
+      const infoLista  = document.getElementById('infoLista');
 
       infoNome.textContent   = nome;
       infoCodigo.textContent = 'Código IBGE: ' + code;
 
       if (!entry) {
-        infoResumo.textContent = 'Nenhum funcionário cadastrado neste município no índice.';
+        infoResumo.textContent = 'Nenhum dado de funcionário para este município.';
         infoLista.textContent  = '';
       } else {
-        infoResumo.textContent = `Funcionários ativos: ${entry.activeCount} / ${entry.totalCount}`;
+        infoResumo.textContent =
+          `Funcionários ativos: ${entry.activeCount} / ${entry.totalCount}`;
         const nomes = entry.employees
-          .map(emp => `${emp.employeeName || emp.employeeId} (${emp.status || 'sem status'})`)
+          .map(emp => `${emp.employeeName} (${emp.status})`)
           .join('; ');
         infoLista.textContent = nomes ? 'Funcionários: ' + nomes : '';
       }
 
-      if (employeeIndexRaw && employeeIndexRaw.updatedAt) {
-        infoAtualizado.textContent = 'Dados atualizados em: ' + employeeIndexRaw.updatedAt;
-      } else {
-        infoAtualizado.textContent = '';
-      }
-
-      // Zoom para o município
       const bounds = layer.getBounds();
       map.fitBounds(bounds, { maxZoom: 11, padding: [20, 20] });
     }
 
-    // onEachFeature: registra eventos, preenche índice de busca por nome
+    // onEachFeature: eventos + índice de busca por nome
     function onEachMunicipio(feature, layer) {
       layer.on({
         mouseover: highlightFeature,
@@ -303,14 +314,16 @@
         click: onMunicipioClick
       });
 
-      // Índice para busca por nome
-      const nome = String(feature?.properties?.NM_MUN || '').trim();  // AJUSTE SEU CAMPO
+      const props = feature.properties || {};
+      const nome =
+        props.NM_MUN || props.nm_mun || props.NOME || null;
+
       if (nome) {
-        const nomeKey = normalizeName(nome);
-        if (!municipiosPorNome.has(nomeKey)) {
-          municipiosPorNome.set(nomeKey, []);
+        const key = normalizeName(nome);
+        if (!municipiosPorNome.has(key)) {
+          municipiosPorNome.set(key, []);
         }
-        municipiosPorNome.get(nomeKey).push({
+        municipiosPorNome.get(key).push({
           nome,
           layer,
           bounds: layer.getBounds()
@@ -318,18 +331,10 @@
       }
     }
 
-    // Normalizar nome (para busca por texto)
-    function normalizeName(str) {
-      return String(str)
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .toUpperCase()
-        .trim();
-    }
-
-    // Inicialização principal
+    // Inicialização
     async function init() {
       try {
-        // Contorno SP
+        // Contorno do estado
         const sp = await loadJSON(SP_URL);
         const spFeature = (sp.type === 'FeatureCollection') ? sp.features[0] : sp;
 
@@ -337,12 +342,13 @@
           style: { color: '#000', weight: 3, fill: false }
         }).addTo(map);
 
-        // Índice de funcionários
-        employeeIndexRaw = await loadJSON(EMPREGADOS_URL);
-        activityByMunicipalityCode = buildMunicipalityActivityIndex(employeeIndexRaw);
-
         // Municípios
         const municipios = await loadJSON(MUNICIPIOS_URL);
+
+        // Cria índice de funcionários fantasia (todos ATIVOS)
+        activityByMunicipalityCode = buildAllActiveIndexFromMunicipios(municipios);
+
+        // Desenha municípios
         municipiosLayer = L.geoJSON(municipios, {
           style: styleMunicipio,
           onEachFeature: onEachMunicipio
@@ -355,21 +361,20 @@
       }
     }
 
-    // Busca de município
+    // Busca
     const searchInput   = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
 
     searchInput.addEventListener('input', () => {
-      const term = normalizeName(searchInput.value);
+      const termRaw = searchInput.value;
+      const term = normalizeName(termRaw);
       searchResults.innerHTML = '';
       if (!term || term.length < 2) return;
 
       const encontrados = [];
       for (const [nomeKey, lista] of municipiosPorNome.entries()) {
         if (nomeKey.includes(term)) {
-          for (const item of lista) {
-            encontrados.push(item);
-          }
+          for (const item of lista) encontrados.push(item);
         }
       }
 
@@ -380,31 +385,14 @@
         div.textContent = item.nome;
         div.onclick = () => {
           map.fitBounds(item.bounds, { maxZoom: 11, padding: [20, 20] });
-          item.layer.fire('click'); // dispara clique para atualizar info-box
+          item.layer.fire('click');
           searchResults.innerHTML = '';
         };
         searchResults.appendChild(div);
       });
     });
 
-    // Atualização periódica dos dados de funcionários (opcional)
-    async function refreshEmployeeData() {
-      try {
-        const novoIndex = await loadJSON(EMPREGADOS_URL);
-        employeeIndexRaw = novoIndex;
-        activityByMunicipalityCode = buildMunicipalityActivityIndex(novoIndex);
-        if (municipiosLayer) {
-          municipiosLayer.setStyle(styleMunicipio);
-        }
-      } catch (err) {
-        console.error('Erro ao atualizar índice de funcionários:', err);
-      }
-    }
-
-    init().then(() => {
-      // Se quiser atualização automática, descomente:
-      // setInterval(refreshEmployeeData, 60000); // a cada 60s
-    });
+    init();
   </script>
 </body>
 </html>
