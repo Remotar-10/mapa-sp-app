@@ -164,6 +164,10 @@
     const MUNICIPIOS_URL  = './sp_municipios_2024.geojson';
     const EMPREGADOS_URL  = './employee_index.json';
 
+    // Detectados dinamicamente a partir do GeoJSON
+    let FIELD_NOME   = null;
+    let FIELD_CODIGO = null;
+
     // Mapa base
     const map = L.map('map').setView([-22.5, -48], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -196,10 +200,40 @@
         .trim();
     }
 
+    // Tenta descobrir automaticamente qual campo é nome e qual é código
+    function detectFieldNames(municipiosGeoJSON) {
+      const f = municipiosGeoJSON.features?.[0];
+      const props = f?.properties || {};
+      const keys = Object.keys(props);
+
+      if (!keys.length) {
+        console.warn('Nenhuma propriedade encontrada nas features do GeoJSON.');
+        return;
+      }
+
+      // Nome do município: tenta achar NM_MUN, NM_MUNIC, NOME, etc.
+      FIELD_NOME =
+        keys.find(k => /NM.*MUN/i.test(k)) ||
+        keys.find(k => /NM.*MUNIC/i.test(k)) ||
+        keys.find(k => /NOME/i.test(k)) ||
+        keys[0]; // fallback
+
+      // Código do município: tenta CD_MUN, CD_GEOCMU, CD_IBGE, COD_MUN, etc.
+      FIELD_CODIGO =
+        keys.find(k => /(CD|COD).*MUN/i.test(k)) ||
+        keys.find(k => /(CD|COD).*(IBGE|GEO)/i.test(k)) ||
+        keys.find(k => /IBGE/i.test(k)) ||
+        null;
+
+      console.log('Campos detectados no GeoJSON:');
+      console.log('  FIELD_NOME  =', FIELD_NOME);
+      console.log('  FIELD_CODIGO=', FIELD_CODIGO);
+    }
+
     // Constrói índice de atividade a partir do employee_index.json
     // Suporta:
     //  - municipalityCode (um município)
-    //  - municipalitiesServed (array de vários códigos), se quiser usar
+    //  - municipalitiesServed (array de vários códigos)
     function buildMunicipalityActivityIndex(employeeIndex) {
       const map = new Map();
       if (!employeeIndex || !Array.isArray(employeeIndex.employees)) return map;
@@ -243,12 +277,22 @@
       return '#C62828';                     // tem funcionário, mas nenhum ativo
     }
 
+    // Lê código do município a partir de properties, usando FIELD_CODIGO
+    function getCodigoFromProps(props) {
+      if (!props || !FIELD_CODIGO) return '';
+      return String(props[FIELD_CODIGO] ?? '').trim();
+    }
+
+    // Lê nome do município a partir de properties, usando FIELD_NOME
+    function getNomeFromProps(props) {
+      if (!props || !FIELD_NOME) return 'Município desconhecido';
+      return String(props[FIELD_NOME] ?? 'Município desconhecido');
+    }
+
     // Estilo do município
     function styleMunicipio(feature) {
       const props = feature.properties || {};
-      // ASSUMINDO QUE O CÓDIGO ESTÁ EM CD_MUN
-      const code = String(props.CD_MUN || '').trim();
-
+      const code  = getCodigoFromProps(props);
       const entry = activityByMunicipalityCode.get(code);
 
       return {
@@ -283,9 +327,8 @@
       const feature = layer.feature;
       const props = feature.properties || {};
 
-      // ASSUMINDO QUE O NOME ESTÁ EM NM_MUN
-      const nome = props.NM_MUN || 'Município desconhecido';
-      const code = String(props.CD_MUN || '').trim() || '-';
+      const nome = getNomeFromProps(props);
+      const code = getCodigoFromProps(props) || '-';
 
       const entry = activityByMunicipalityCode.get(code);
 
@@ -329,7 +372,7 @@
       });
 
       const props = feature.properties || {};
-      const nome = props.NM_MUN || null;
+      const nome  = getNomeFromProps(props);
 
       if (nome) {
         const key = normalizeName(nome);
@@ -355,13 +398,19 @@
           style: { color: '#000', weight: 3, fill: false }
         }).addTo(map);
 
+        // Municipios (carrega primeiro para detectar campos)
+        const municipios = await loadJSON(MUNICIPIOS_URL);
+        if (municipios.type !== 'FeatureCollection') {
+          console.error('O GeoJSON de municípios não é FeatureCollection. type=', municipios.type);
+        }
+
+        detectFieldNames(municipios);
+
         // Índice de funcionários
         employeeIndexRaw = await loadJSON(EMPREGADOS_URL);
         activityByMunicipalityCode = buildMunicipalityActivityIndex(employeeIndexRaw);
 
-        // Municípios
-        const municipios = await loadJSON(MUNICIPIOS_URL);
-
+        // Camada de municípios
         municipiosLayer = L.geoJSON(municipios, {
           style: styleMunicipio,
           onEachFeature: onEachMunicipio
