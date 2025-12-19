@@ -354,7 +354,10 @@ html, body { height:100%; margin:0; font-family: system-ui, -apple-system, Segoe
 <div class="topbar">
 <div class="card header">
 <h1>São Paulo | Alocação de Funcionários</h1>
-<p>Selecione um município no mapa ou pela busca. Adicione funcionários por município ou por região. Os dados ficam salvos neste dispositivo (Exportar/Importar para compartilhar).</p>
+<p>Selecione um município no mapa ou pela busca. Adicione funcionários por município ou por região.</p>
+<p id="focusAreaLabel" style="margin-top:4px;font-size:11px;color:#4b5563;font-weight:600;">
+Área em foco: Estado de São Paulo
+</p>
 </div>
 
 <div class="card legend">
@@ -403,18 +406,7 @@ html, body { height:100%; margin:0; font-family: system-ui, -apple-system, Segoe
     <div style="height:10px"></div>
 
     <div class="note">
-      Persistência: salva neste dispositivo. Para compartilhar, use “Exportar JSON” e salve como employee_index.json no repositório.
-    </div>
-
-    <div style="height:10px"></div>
-
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <button class="btn" id="btnExport">Exportar JSON</button>
-      <label class="btn" for="importFile" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;">
-        Importar JSON
-      </label>
-      <input id="importFile" type="file" accept="application/json" style="display:none;">
-      <button class="btn danger" id="btnReset">Limpar dados</button>
+      Dados de funcionários são salvos automaticamente neste dispositivo.
     </div>
   </div>
 </div>
@@ -477,7 +469,7 @@ html, body { height:100%; margin:0; font-family: system-ui, -apple-system, Segoe
 
     <div class="field" id="regionValueWrap" style="display:none;">
       <label>Valor da região</label>
-      <input id="fRegionValue" placeholder="Ex.: Campinas / Sorocaba / ..." />
+      <input id="fRegionValue" placeholder="Ex.: Registro / Campinas / ..." />
     </div>
 
     <div class="field">
@@ -493,7 +485,7 @@ html, body { height:100%; margin:0; font-family: system-ui, -apple-system, Segoe
 
   <div class="modal-foot">
     <div class="note" id="modalNote">
-      O cadastro será salvo neste dispositivo. Para compartilhar, exporte o JSON.
+      O cadastro será salvo neste dispositivo.
     </div>
     <div style="display:flex; gap:8px;">
       <button class="btn danger" id="btnDelete" style="display:none;">Excluir</button>
@@ -553,9 +545,6 @@ const pillNone = $('pillNone');
 const allocList = $('allocList');
 const countSub = $('countSub');
 
-const btnExport = $('btnExport');
-const btnReset = $('btnReset');
-const importFile = $('importFile');
 const btnZoomSP = $('btnZoomSP');
 
 const modalBackdrop = $('modalBackdrop');
@@ -577,6 +566,7 @@ const regionFieldWrap = $('regionFieldWrap');
 const regionValueWrap = $('regionValueWrap');
 
 const toast = $('toast');
+const focusAreaLabel = $('focusAreaLabel');
 
 let editingEmployeeInternalId = null;
 
@@ -803,6 +793,12 @@ function resetHighlight(e){
   if (municipiosLayer) municipiosLayer.resetStyle(e.target);
 }
 
+function updateFocusAreaLabel(text){
+  if (focusAreaLabel) {
+    focusAreaLabel.textContent = 'Área em foco: ' + text;
+  }
+}
+
 function selectMunicipioByFeature(feature, layer){
   selectedFeature = feature;
   selectedCode = getCodigo(feature.properties);
@@ -814,6 +810,8 @@ function selectMunicipioByFeature(feature, layer){
   selNome.textContent = name;
   selCodigo.textContent = selectedCode || '-';
   selRegiao.textContent = getMunicipioRegionSummary(feature.properties);
+
+  updateFocusAreaLabel('Município ' + name);
 
   pillSelected.style.display = selectedCode ? 'inline-flex' : 'none';
 
@@ -992,6 +990,7 @@ function renderAllocationsPanel(){
         if (layers.length){
           const groupLayer = L.featureGroup(layers);
           map.fitBounds(groupLayer.getBounds(), { padding:[40,40], maxZoom: 10, animate:true, duration:0.6 });
+          updateFocusAreaLabel('Região ' + value);
           showToast(`Foco na região: ${value}`);
         } else {
           showToast('Não foi possível focar: sem camadas encontradas.');
@@ -1179,80 +1178,6 @@ function deleteEmployee(){
   showToast('Funcionário excluído.');
 }
 
-function exportJson(){
-  const out = {
-    updatedAt: db.updatedAt || nowIso(),
-    employees: db.employees.map(e => ({
-      employeeId: e.id || '',
-      employeeName: e.name,
-      role: e.role || '',
-      status: e.status || 'ACTIVE',
-      assignment: e.assignment
-    }))
-  };
-
-  const blob = new Blob([JSON.stringify(out, null, 2)], { type:'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'employee_index.json';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-
-  showToast('Exportado: employee_index.json');
-}
-
-async function importJsonFromFile(file){
-  try{
-    const text = await file.text();
-    const j = JSON.parse(text);
-
-    if (!j || !Array.isArray(j.employees)){
-      showToast('JSON inválido: faltando employees[].');
-      return;
-    }
-
-    db = {
-      updatedAt: j.updatedAt || nowIso(),
-      employees: j.employees.map(x => ({
-        id: x.employeeId || x.id || '',
-        name: x.employeeName || x.name || '',
-        role: x.role || x.cargo || '',
-        status: (x.status || 'ACTIVE').toUpperCase(),
-        assignment: x.assignment || (
-          x.municipalityCode ? { type:'MUNICIPIO', code: String(x.municipalityCode) } :
-          (x.regionField && x.regionValue ? { type:'REGIAO', field: x.regionField, value: x.regionValue } : null)
-        )
-      })).filter(e => e.assignment && e.name)
-    };
-
-    saveDbToLocalStorage();
-    rebuildStats();
-    if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
-    renderAllocationsPanel();
-    showToast('Importação concluída.');
-  }catch(e){
-    showToast('Falha ao importar JSON.');
-  }finally{
-    importFile.value = '';
-  }
-}
-
-function resetData(){
-  const ok = confirm('Isso apagará as alocações salvas neste dispositivo. Continuar?');
-  if (!ok) return;
-
-  db = { updatedAt: null, employees: [] };
-  localStorage.removeItem(STORAGE_KEY);
-
-  rebuildStats();
-  if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
-  renderAllocationsPanel();
-  showToast('Dados apagados.');
-}
-
 const map = L.map('map').setView([-22.7, -48.8], 7);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   maxZoom: 19,
@@ -1296,6 +1221,7 @@ async function init(){
   }).addTo(map);
 
   map.fitBounds(municipiosLayer.getBounds(), { padding:[30,30] });
+  updateFocusAreaLabel('Estado de São Paulo');
   renderAllocationsPanel();
   showToast('Mapa pronto.');
 }
@@ -1326,16 +1252,11 @@ searchInput.oninput = () => {
   renderSearchResults(matches);
 };
 
-btnExport.onclick = exportJson;
-btnReset.onclick = resetData;
-
-importFile.onchange = () => {
-  const file = importFile.files?.[0];
-  if (file) importJsonFromFile(file);
-};
-
 btnZoomSP.onclick = () => {
-  if (municipiosLayer) map.fitBounds(municipiosLayer.getBounds(), { padding:[30,30] });
+  if (municipiosLayer){
+    map.fitBounds(municipiosLayer.getBounds(), { padding:[30,30] });
+    updateFocusAreaLabel('Estado de São Paulo');
+  }
 };
 
 init().catch(err => {
