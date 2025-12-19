@@ -1,8 +1,65 @@
 {
-  "updatedAt": "2025-12-18T12:00:00Z",
+  "updatedAt": "2025-12-19T15:30:00Z",
   "employees": [
-    { "employeeId": "E001", "employeeName": "Ana",   "municipalityCode": "3550308", "status": "ACTIVE"   },
-    { "employeeId": "E002", "employeeName": "Bruno", "municipalityCode": "3550308", "status": "INACTIVE" },
-    { "employeeId": "E003", "employeeName": "Carlos","municipalityCode": "3509502", "status": "ACTIVE"   }
+    {
+      "employeeId": "EMP001",
+      "employeeName": "João Silva",
+      "status": "ACTIVE",
+      "municipalityCode": "3550308"
+    },
+    {
+      "employeeId": "EMP002",
+      "employeeName": "Maria Santos",
+      "status": "ACTIVE",
+      "municipalityCode": "3509502"
+    },
+    {
+      "employeeId": "EMP003",
+      "employeeName": "Pedro Oliveira",
+      "status": "INACTIVE",
+      "municipalityCode": "3550308"
+    },
+    {
+      "employeeId": "EMP004",
+      "employeeName": "Ana Costa",
+      "status": "ACTIVE",
+      "municipalityCode": "3518800"
+    },
+    {
+      "employeeId": "EMP005",
+      "employeeName": "Carlos Ferreira",
+      "status": "ACTIVE",
+      "municipalityCode": "3552205"
+    },
+    {
+      "employeeId": "EMP006",
+      "employeeName": "Juliana Rodrigues",
+      "status": "INACTIVE",
+      "municipalityCode": "3509502"
+    },
+    {
+      "employeeId": "EMP007",
+      "employeeName": "Roberto Almeida",
+      "status": "ACTIVE",
+      "municipalityCode": "3503901"
+    },
+    {
+      "employeeId": "EMP008",
+      "employeeName": "Fernanda Lima",
+      "status": "ACTIVE",
+      "municipalityCode": "3513009"
+    },
+    {
+      "employeeId": "EMP009",
+      "employeeName": "Lucas Martins",
+      "status": "ACTIVE",
+      "municipalitiesServed": ["3550308", "3509502", "3518800"]
+    },
+    {
+      "employeeId": "EMP010",
+      "employeeName": "Patricia Souza",
+      "status": "INACTIVE",
+      "municipalityCode": "3552205"
+    }
   ]
 }
