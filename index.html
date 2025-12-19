@@ -3,117 +3,151 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mapa SP - Funcionários por Município</title>
+  <title>São Paulo - Funcionários por Município</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
-    html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    html, body { 
+      height: 100%; 
+      margin: 0; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
     #map { height: 100%; width: 100%; }
 
+    /* Header */
     .header {
       position: absolute;
       top: 15px;
       left: 15px;
       background: white;
-      padding: 12px 16px;
+      padding: 14px 18px;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
       z-index: 1000;
-      max-width: 260px;
+      max-width: 320px;
     }
     .header h1 {
-      margin: 0;
+      margin: 0 0 4px 0;
       font-size: 18px;
       color: #1e3a8a;
+      font-weight: 600;
     }
     .header p {
-      margin: 4px 0;
-      font-size: 12px;
-      color: #374151;
+      margin: 0;
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.4;
     }
 
+    /* Legenda */
     .legenda {
       position: absolute;
       top: 15px;
       right: 15px;
       background: white;
-      padding: 10px 14px;
+      padding: 12px 16px;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
       z-index: 1000;
       font-size: 12px;
-      max-width: 260px;
+      max-width: 280px;
     }
     .legenda h3 {
-      margin: 0 0 6px 0;
-      font-size: 13px;
+      margin: 0 0 8px 0;
+      font-size: 14px;
       color: #111827;
+      font-weight: 600;
     }
     .legenda-item {
-      margin: 3px 0;
+      margin: 5px 0;
+      display: flex;
+      align-items: center;
     }
     .legenda-color {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
-      border-radius: 2px;
-      margin-right: 5px;
-      vertical-align: middle;
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      margin-right: 8px;
+      flex-shrink: 0;
+      border: 1px solid rgba(0,0,0,0.1);
     }
 
+    /* Info Box (painel de detalhes do município) */
     .info-box {
       position: absolute;
       bottom: 15px;
       left: 15px;
       background: white;
-      padding: 12px 16px;
+      padding: 14px 18px;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
       z-index: 1000;
-      max-width: 280px;
-      font-size: 12px;
+      max-width: 340px;
+      font-size: 13px;
     }
     .info-box h2 {
-      margin: 0 0 4px 0;
-      font-size: 15px;
+      margin: 0 0 6px 0;
+      font-size: 16px;
       color: #111827;
+      font-weight: 600;
     }
     .info-box p {
-      margin: 2px 0;
+      margin: 4px 0;
+      line-height: 1.5;
     }
     .info-box .small {
       font-size: 11px;
       color: #6b7280;
     }
+    .info-box .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    .status-occupied { background: #FFE0B2; color: #E65100; }
+    .status-next { background: #FFF9C4; color: #F57F17; }
+    .status-active { background: #C8E6C9; color: #1B5E20; }
+    .status-inactive { background: #FFCDD2; color: #B71C1C; }
+    .status-none { background: #E0E0E0; color: #424242; }
 
+    /* Search Box */
     .search-box {
       position: absolute;
       bottom: 15px;
       right: 15px;
       background: white;
-      padding: 10px;
+      padding: 12px;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
       z-index: 1000;
       font-size: 12px;
-      width: 220px;
+      width: 240px;
     }
     .search-box input {
       width: 100%;
-      padding: 6px 8px;
-      border-radius: 4px;
+      padding: 8px 10px;
+      border-radius: 6px;
       border: 1px solid #d1d5db;
-      font-size: 12px;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+    .search-box input:focus {
+      outline: none;
+      border-color: #3b82f6;
     }
     .search-results {
-      margin-top: 6px;
-      max-height: 160px;
+      margin-top: 8px;
+      max-height: 180px;
       overflow-y: auto;
     }
     .search-results div {
-      padding: 4px 6px;
+      padding: 6px 8px;
       border-radius: 4px;
       cursor: pointer;
+      font-size: 12px;
     }
     .search-results div:hover {
       background: #f3f4f6;
@@ -131,23 +165,24 @@
   <div class="legenda">
     <h3>Legenda</h3>
     <div class="legenda-item">
-      <span class="legenda-color" style="background:#2E7D32;"></span>
-      Pelo menos 1 funcionário ATIVO
+      <span class="legenda-color" style="background:#FF6F00;"></span>
+      <span>Pelo menos 1 funcionário ATIVO</span>
     </div>
     <div class="legenda-item">
-      <span class="legenda-color" style="background:#C62828;"></span>
-      Funcionários somente INATIVOS (nenhum ativo)
+      <span class="legenda-color" style="background:#1976D2;"></span>
+      <span>Funcionários somente ATIVOS (nenhum ativo)</span>
     </div>
     <div class="legenda-item">
       <span class="legenda-color" style="background:#BDBDBD;"></span>
-      Nenhum funcionário no índice
+      <span>Nenhum funcionário no índice</span>
     </div>
   </div>
 
   <div class="info-box" id="infoBox">
     <h2 id="infoNome">Selecione um município</h2>
     <p id="infoCodigo" class="small">Código IBGE: -</p>
-    <p id="infoResumo">Nenhuma seleção ainda.</p>
+    <div id="infoStatus"></div>
+    <p id="infoResumo"></p>
     <p id="infoLista" class="small"></p>
     <p id="infoAtualizado" class="small"></p>
   </div>
@@ -159,17 +194,20 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // Caminhos (mesma pasta do index.html)
+    // ============================================================
+    // CONFIGURAÇÃO: Caminhos dos arquivos (mesma pasta do index.html)
+    // ============================================================
     const SP_URL          = './sp.json';
     const MUNICIPIOS_URL  = './sp_municipios_2024.geojson';
     const EMPREGADOS_URL  = './employee_index.json';
 
-    // Detectados dinamicamente a partir do GeoJSON
-    let FIELD_NOME   = null;
-    let FIELD_CODIGO = null;
+    // ============================================================
+    // VARIÁVEIS GLOBAIS
+    // ============================================================
+    let FIELD_NOME   = null;  // detectado automaticamente
+    let FIELD_CODIGO = null;  // detectado automaticamente
 
-    // Mapa base
-    const map = L.map('map').setView([-22.5, -48], 7);
+    const map = L.map('map').setView([-22.5, -48.5], 7);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap contributors'
@@ -178,21 +216,22 @@
     let spOutlineLayer = null;
     let municipiosLayer = null;
 
-    // código município -> { activeCount, totalCount, employees: [] }
+    // código município -> { activeCount, totalCount, employees, occupiedBy, nextBy }
     let activityByMunicipalityCode = new Map();
     let employeeIndexRaw = null;
 
     // índice para busca: nome normalizado -> [{ nome, layer, bounds }]
     const municipiosPorNome = new Map();
 
-    // Utilitário: carregar JSON
+    // ============================================================
+    // UTILITÁRIOS
+    // ============================================================
     async function loadJSON(url) {
       const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) throw new Error('Erro ao carregar ' + url + ': ' + res.status);
       return await res.json();
     }
 
-    // Normaliza string de nome (para busca)
     function normalizeName(str) {
       return String(str)
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -200,96 +239,139 @@
         .trim();
     }
 
-    // Tenta descobrir automaticamente qual campo é nome e qual é código
+    // ============================================================
+    // DETECÇÃO AUTOMÁTICA DE CAMPOS DO GEOJSON
+    // ============================================================
     function detectFieldNames(municipiosGeoJSON) {
       const f = municipiosGeoJSON.features?.[0];
       const props = f?.properties || {};
       const keys = Object.keys(props);
 
       if (!keys.length) {
-        console.warn('Nenhuma propriedade encontrada nas features do GeoJSON.');
+        console.warn('⚠️ Nenhuma propriedade encontrada nas features do GeoJSON.');
         return;
       }
 
-      // Nome do município: tenta achar NM_MUN, NM_MUNIC, NOME, etc.
+      // Nome do município
       FIELD_NOME =
         keys.find(k => /NM.*MUN/i.test(k)) ||
         keys.find(k => /NM.*MUNIC/i.test(k)) ||
         keys.find(k => /NOME/i.test(k)) ||
-        keys[0]; // fallback
+        keys[0];
 
-      // Código do município: tenta CD_MUN, CD_GEOCMU, CD_IBGE, COD_MUN, etc.
+      // Código do município
       FIELD_CODIGO =
         keys.find(k => /(CD|COD).*MUN/i.test(k)) ||
         keys.find(k => /(CD|COD).*(IBGE|GEO)/i.test(k)) ||
         keys.find(k => /IBGE/i.test(k)) ||
         null;
 
-      console.log('Campos detectados no GeoJSON:');
-      console.log('  FIELD_NOME  =', FIELD_NOME);
-      console.log('  FIELD_CODIGO=', FIELD_CODIGO);
+      console.log('✅ Campos detectados no GeoJSON:');
+      console.log('   FIELD_NOME  =', FIELD_NOME);
+      console.log('   FIELD_CODIGO=', FIELD_CODIGO);
     }
 
-    // Constrói índice de atividade a partir do employee_index.json
-    // Suporta:
-    //  - municipalityCode (um município)
-    //  - municipalitiesServed (array de vários códigos)
+    // ============================================================
+    // CONSTRUÇÃO DO ÍNDICE DE ATIVIDADE (com rotas e ocupação)
+    // ============================================================
     function buildMunicipalityActivityIndex(employeeIndex) {
       const map = new Map();
       if (!employeeIndex || !Array.isArray(employeeIndex.employees)) return map;
 
+      function ensure(code) {
+        if (!map.has(code)) {
+          map.set(code, {
+            activeCount: 0,
+            totalCount: 0,
+            employees: [],
+            occupiedBy: null,  // employeeId do funcionário atual neste município
+            nextBy: null       // employeeId do próximo funcionário
+          });
+        }
+        return map.get(code);
+      }
+
       for (const emp of employeeIndex.employees) {
         const status = String(emp.status || '').toUpperCase();
 
-        const codes = [];
+        // 1) Municípios atendidos (compatível com versão anterior)
+        const servedCodes = [];
 
         if (emp.municipalityCode) {
-          codes.push(String(emp.municipalityCode).trim());
+          servedCodes.push(String(emp.municipalityCode).trim());
         }
 
         if (Array.isArray(emp.municipalitiesServed)) {
           for (const c of emp.municipalitiesServed) {
             const v = String(c || '').trim();
-            if (v) codes.push(v);
+            if (v) servedCodes.push(v);
           }
         }
 
-        const uniqueCodes = Array.from(new Set(codes)).filter(Boolean);
+        // 2) Rota (novo: array de códigos de municípios)
+        const route = Array.isArray(emp.route) 
+          ? emp.route.map(x => String(x).trim()).filter(Boolean) 
+          : [];
+        
+        const current = String(emp.currentMunicipalityCode || '').trim();
 
-        for (const code of uniqueCodes) {
-          if (!map.has(code)) {
-            map.set(code, { activeCount: 0, totalCount: 0, employees: [] });
-          }
-          const entry = map.get(code);
+        // Unifica tudo como "atendido"
+        const allServed = Array.from(new Set([...servedCodes, ...route])).filter(Boolean);
+
+        // Registra todos os municípios atendidos
+        for (const code of allServed) {
+          const entry = ensure(code);
           entry.totalCount += 1;
           if (status === 'ACTIVE') entry.activeCount += 1;
           entry.employees.push(emp);
+        }
+
+        // 3) Marca município atual (ocupado)
+        if (current) {
+          const eCur = ensure(current);
+          eCur.occupiedBy = emp.employeeId || emp.employeeName || 'Funcionário';
+        }
+
+        // 4) Marca próximo município
+        if (route.length && current) {
+          const idx = route.indexOf(current);
+          const next = (idx >= 0 && idx + 1 < route.length) ? route[idx + 1] : null;
+          if (next) {
+            const eNext = ensure(next);
+            eNext.nextBy = emp.employeeId || emp.employeeName || 'Funcionário';
+          }
         }
       }
 
       return map;
     }
 
-    // Cor de preenchimento de acordo com os dados do índice
+    // ============================================================
+    // COR DO MUNICÍPIO (prioridade: ocupado > ativo > cinza)
+    // ============================================================
     function getFillColorByActivity(entry) {
-      if (!entry) return '#BDBDBD';         // sem dados
-      if (entry.activeCount > 0) return '#2E7D32';  // pelo menos 1 ativo
-      return '#C62828';                     // tem funcionário, mas nenhum ativo
+      if (!entry) return '#BDBDBD';           // cinza: nenhum funcionário
+      if (entry.occupiedBy) return '#FF6F00'; // laranja: ocupado (funcionário atual)
+      if (entry.activeCount > 0) return '#1976D2'; // azul: pelo menos 1 ativo
+      return '#BDBDBD';                       // cinza: sem ativos
     }
 
-    // Lê código do município a partir de properties, usando FIELD_CODIGO
+    // ============================================================
+    // LEITURA DE PROPRIEDADES DO GEOJSON
+    // ============================================================
     function getCodigoFromProps(props) {
       if (!props || !FIELD_CODIGO) return '';
       return String(props[FIELD_CODIGO] ?? '').trim();
     }
 
-    // Lê nome do município a partir de properties, usando FIELD_NOME
     function getNomeFromProps(props) {
       if (!props || !FIELD_NOME) return 'Município desconhecido';
       return String(props[FIELD_NOME] ?? 'Município desconhecido');
     }
 
-    // Estilo do município
+    // ============================================================
+    // ESTILO E INTERAÇÃO DO MAPA
+    // ============================================================
     function styleMunicipio(feature) {
       const props = feature.properties || {};
       const code  = getCodigoFromProps(props);
@@ -298,30 +380,30 @@
       return {
         color: '#ffffff',
         weight: 0.8,
-        fillOpacity: 0.85,
+        fillOpacity: 0.7,
         fillColor: getFillColorByActivity(entry)
       };
     }
 
-    // Destaque no mouseover
     function highlightFeature(e) {
       const layer = e.target;
       layer.setStyle({
-        weight: 2,
+        weight: 2.5,
         color: '#111827',
-        fillOpacity: 0.95
+        fillOpacity: 0.9
       });
       if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
         layer.bringToFront();
       }
     }
 
-    // Remover destaque
     function resetHighlight(e) {
       if (municipiosLayer) municipiosLayer.resetStyle(e.target);
     }
 
-    // Clique no município → atualiza info-box e dá zoom
+    // ============================================================
+    // CLIQUE NO MUNICÍPIO: atualiza painel de informações
+    // ============================================================
     function onMunicipioClick(e) {
       const layer = e.target;
       const feature = layer.feature;
@@ -334,6 +416,7 @@
 
       const infoNome       = document.getElementById('infoNome');
       const infoCodigo     = document.getElementById('infoCodigo');
+      const infoStatus     = document.getElementById('infoStatus');
       const infoResumo     = document.getElementById('infoResumo');
       const infoLista      = document.getElementById('infoLista');
       const infoAtualizado = document.getElementById('infoAtualizado');
@@ -341,29 +424,60 @@
       infoNome.textContent   = nome;
       infoCodigo.textContent = 'Código IBGE: ' + code;
 
+      // Limpa status anterior
+      infoStatus.innerHTML = '';
+
       if (!entry) {
-        infoResumo.textContent = 'Nenhum funcionário cadastrado neste município no índice.';
+        infoStatus.innerHTML = '<span class="status-badge status-none">Sem funcionários</span>';
+        infoResumo.textContent = 'Nenhum funcionário cadastrado neste município.';
         infoLista.textContent  = '';
       } else {
-        infoResumo.textContent =
-          `Funcionários ativos: ${entry.activeCount} / ${entry.totalCount}`;
+        // Badges de status
+        let badges = '';
+        if (entry.occupiedBy) {
+          badges += `<span class="status-badge status-occupied">🔴 Ocupado: ${entry.occupiedBy}</span> `;
+        }
+        if (entry.nextBy) {
+          badges += `<span class="status-badge status-next">⚠️ Próximo: ${entry.nextBy}</span> `;
+        }
+        if (entry.activeCount > 0) {
+          badges += `<span class="status-badge status-active">✅ ${entry.activeCount} ativo(s)</span> `;
+        }
+        if (entry.totalCount > entry.activeCount) {
+          const inativos = entry.totalCount - entry.activeCount;
+          badges += `<span class="status-badge status-inactive">❌ ${inativos} inativo(s)</span>`;
+        }
+        infoStatus.innerHTML = badges;
+
+        // Resumo
+        infoResumo.textContent = 
+          `Total de funcionários: ${entry.totalCount} (${entry.activeCount} ativos)`;
+
+        // Lista de funcionários
         const nomes = entry.employees
-          .map(emp => `${emp.employeeName || emp.employeeId} (${emp.status || 'sem status'})`)
-          .join('; ');
+          .map(emp => {
+            const st = (emp.status || '').toUpperCase() === 'ACTIVE' ? '✅' : '❌';
+            return `${st} ${emp.employeeName || emp.employeeId}`;
+          })
+          .join(', ');
         infoLista.textContent = nomes ? 'Funcionários: ' + nomes : '';
       }
 
+      // Data de atualização
       if (employeeIndexRaw && employeeIndexRaw.updatedAt) {
-        infoAtualizado.textContent = 'Dados atualizados em: ' + employeeIndexRaw.updatedAt;
+        infoAtualizado.textContent = '📅 Atualizado em: ' + employeeIndexRaw.updatedAt;
       } else {
         infoAtualizado.textContent = '';
       }
 
+      // Zoom no município
       const bounds = layer.getBounds();
-      map.fitBounds(bounds, { maxZoom: 11, padding: [20, 20] });
+      map.fitBounds(bounds, { maxZoom: 11, padding: [30, 30] });
     }
 
-    // onEachFeature: eventos + índice de busca por nome
+    // ============================================================
+    // onEachFeature: eventos + índice de busca
+    // ============================================================
     function onEachMunicipio(feature, layer) {
       layer.on({
         mouseover: highlightFeature,
@@ -387,43 +501,53 @@
       }
     }
 
-    // Inicialização
+    // ============================================================
+    // INICIALIZAÇÃO
+    // ============================================================
     async function init() {
       try {
-        // Contorno do estado
+        console.log('🔄 Carregando dados...');
+
+        // 1) Contorno do estado
         const sp = await loadJSON(SP_URL);
         const spFeature = (sp.type === 'FeatureCollection') ? sp.features[0] : sp;
 
         spOutlineLayer = L.geoJSON(spFeature, {
-          style: { color: '#000', weight: 3, fill: false }
+          style: { color: '#000', weight: 2.5, fill: false }
         }).addTo(map);
 
-        // Municipios (carrega primeiro para detectar campos)
+        // 2) Municipios (carrega primeiro para detectar campos)
         const municipios = await loadJSON(MUNICIPIOS_URL);
         if (municipios.type !== 'FeatureCollection') {
-          console.error('O GeoJSON de municípios não é FeatureCollection. type=', municipios.type);
+          console.error('❌ O GeoJSON de municípios não é FeatureCollection. type=', municipios.type);
         }
 
         detectFieldNames(municipios);
 
-        // Índice de funcionários
+        // 3) Índice de funcionários
         employeeIndexRaw = await loadJSON(EMPREGADOS_URL);
         activityByMunicipalityCode = buildMunicipalityActivityIndex(employeeIndexRaw);
 
-        // Camada de municípios
+        console.log('📊 Índice de atividade construído:', activityByMunicipalityCode.size, 'municípios');
+
+        // 4) Camada de municípios
         municipiosLayer = L.geoJSON(municipios, {
           style: styleMunicipio,
           onEachFeature: onEachMunicipio
         }).addTo(map);
 
-        map.fitBounds(municipiosLayer.getBounds(), { padding: [20, 20] });
+        map.fitBounds(municipiosLayer.getBounds(), { padding: [30, 30] });
+
+        console.log('✅ Mapa carregado com sucesso!');
       } catch (err) {
-        console.error(err);
+        console.error('❌ Erro ao carregar dados:', err);
         alert('Erro ao carregar dados: ' + err.message);
       }
     }
 
-    // Busca
+    // ============================================================
+    // BUSCA DE MUNICÍPIOS
+    // ============================================================
     const searchInput   = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
 
@@ -440,21 +564,27 @@
         }
       }
 
-      if (!encontrados.length) return;
+      if (!encontrados.length) {
+        searchResults.innerHTML = '<div style="color:#9ca3af;">Nenhum resultado</div>';
+        return;
+      }
 
       encontrados.slice(0, 30).forEach(item => {
         const div = document.createElement('div');
         div.textContent = item.nome;
         div.onclick = () => {
-          map.fitBounds(item.bounds, { maxZoom: 11, padding: [20, 20] });
+          map.fitBounds(item.bounds, { maxZoom: 11, padding: [30, 30] });
           item.layer.fire('click');
           searchResults.innerHTML = '';
+          searchInput.value = '';
         };
         searchResults.appendChild(div);
       });
     });
 
-    // Atualização periódica opcional do índice de funcionários
+    // ============================================================
+    // ATUALIZAÇÃO PERIÓDICA (opcional)
+    // ============================================================
     async function refreshEmployeeData() {
       try {
         const novoIndex = await loadJSON(EMPREGADOS_URL);
@@ -463,14 +593,18 @@
         if (municipiosLayer) {
           municipiosLayer.setStyle(styleMunicipio);
         }
+        console.log('🔄 Índice de funcionários atualizado');
       } catch (err) {
-        console.error('Erro ao atualizar índice de funcionários:', err);
+        console.error('❌ Erro ao atualizar índice de funcionários:', err);
       }
     }
 
+    // ============================================================
+    // INICIAR
+    // ============================================================
     init().then(() => {
-      // Se quiser atualização automática do índice, descomente:
-      // setInterval(refreshEmployeeData, 60000); // a cada 60s
+      // Se quiser atualização automática a cada 60 segundos, descomente:
+      // setInterval(refreshEmployeeData, 60000);
     });
   </script>
 </body>

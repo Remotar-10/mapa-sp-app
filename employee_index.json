@@ -1,65 +1,31 @@
 {
-  "updatedAt": "2025-12-19T15:30:00Z",
+  "updatedAt": "2025-12-19T18:30:00Z",
   "employees": [
     {
       "employeeId": "EMP001",
-      "employeeName": "João Silva",
+      "employeeName": "Carlos Silva",
       "status": "ACTIVE",
-      "municipalityCode": "3550308"
+      "route": ["3550308", "3509502", "3518800"],
+      "currentMunicipalityCode": "3550308"
     },
     {
       "employeeId": "EMP002",
-      "employeeName": "Maria Santos",
+      "employeeName": "Ana Costa",
       "status": "ACTIVE",
-      "municipalityCode": "3509502"
+      "route": ["3548708", "3552205", "3548807"],
+      "currentMunicipalityCode": "3552205"
     },
     {
       "employeeId": "EMP003",
-      "employeeName": "Pedro Oliveira",
+      "employeeName": "João Santos",
       "status": "INACTIVE",
-      "municipalityCode": "3550308"
+      "municipalityCode": "3506003"
     },
     {
       "employeeId": "EMP004",
-      "employeeName": "Ana Costa",
+      "employeeName": "Maria Oliveira",
       "status": "ACTIVE",
-      "municipalityCode": "3518800"
-    },
-    {
-      "employeeId": "EMP005",
-      "employeeName": "Carlos Ferreira",
-      "status": "ACTIVE",
-      "municipalityCode": "3552205"
-    },
-    {
-      "employeeId": "EMP006",
-      "employeeName": "Juliana Rodrigues",
-      "status": "INACTIVE",
-      "municipalityCode": "3509502"
-    },
-    {
-      "employeeId": "EMP007",
-      "employeeName": "Roberto Almeida",
-      "status": "ACTIVE",
-      "municipalityCode": "3503901"
-    },
-    {
-      "employeeId": "EMP008",
-      "employeeName": "Fernanda Lima",
-      "status": "ACTIVE",
-      "municipalityCode": "3513009"
-    },
-    {
-      "employeeId": "EMP009",
-      "employeeName": "Lucas Martins",
-      "status": "ACTIVE",
-      "municipalitiesServed": ["3550308", "3509502", "3518800"]
-    },
-    {
-      "employeeId": "EMP010",
-      "employeeName": "Patricia Souza",
-      "status": "INACTIVE",
-      "municipalityCode": "3552205"
+      "municipalitiesServed": ["3515004", "3516200", "3518305"]
     }
   ]
 }
