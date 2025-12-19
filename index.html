@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SP | Alocação de Funcionários por Município/Região</title>
+  <title>São Paulo | Alocação de Funcionários por Município</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -55,28 +55,6 @@
       line-height:1.35;
     }
 
-    .legend{
-      margin-left:auto;
-      padding:12px 14px;
-      max-width:380px;
-    }
-    .legend h3{
-      margin:0 0 8px 0;
-      font-size:13px;
-      color:#111827;
-      font-weight:800;
-    }
-    .legend .row{
-      display:flex; align-items:center; gap:8px;
-      font-size:12px; color:#374151;
-      margin:6px 0;
-    }
-    .swatch{
-      width:12px; height:12px; border-radius:3px;
-      border:1px solid rgba(17,24,39,.12);
-      flex:0 0 12px;
-    }
-
     .layout{
       position:absolute; top:86px; left:16px; right:16px; bottom:16px;
       display:grid;
@@ -100,7 +78,6 @@
       .leftpanel{ grid-row:1; }
       .rightpanel{ grid-row:2; max-height:46vh; }
       .mapmask{ grid-row:3; }
-      .legend{ display:none; }
     }
 
     .leftpanel, .rightpanel{
@@ -247,11 +224,6 @@
     }
 
     .mapmask{ pointer-events:none; }
-    .mapmask::before{
-      content:"";
-      position:absolute; inset:0;
-      pointer-events:none;
-    }
 
     .modal-backdrop{
       position:fixed;
@@ -345,12 +317,70 @@
       transform: translateY(0);
     }
 
-    /* controle de exibição do painel direito */
+    /* painel direito recolhível */
     .layout.no-right{
       grid-template-columns: 360px 1fr;
     }
     .rightpanel.is-hidden{
       display:none;
+    }
+
+    /* legenda recolhível */
+    .legend-open-wrap{
+      position:absolute;
+      top:16px;
+      right:16px;
+      z-index:1200;
+      pointer-events:auto;
+    }
+
+    .legend-pop{
+      position:absolute;
+      top:56px;
+      right:16px;
+      z-index:1200;
+      width:360px;
+      max-width: calc(100vw - 32px);
+      pointer-events:auto;
+    }
+
+    .legend-pop.is-hidden{
+      display:none;
+    }
+
+    .legend-head{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(17,24,39,.10);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+
+    .legend-title{
+      font-weight:950;
+      color:#111827;
+      font-size:13px;
+    }
+
+    .legend-body{
+      padding:12px 14px;
+    }
+
+    .legend-row{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      font-size:12px;
+      color:#374151;
+      line-height:1.35;
+      margin:8px 0;
+    }
+
+    .swatch{
+      width:12px; height:12px; border-radius:3px;
+      border:1px solid rgba(17,24,39,.12);
+      flex:0 0 12px;
     }
   </style>
 </head>
@@ -366,13 +396,40 @@
         Área em foco: Estado de São Paulo
       </p>
     </div>
+  </div>
 
-    <div class="card legend">
-      <h3>Legenda</h3>
-      <div class="row"><span class="swatch" style="background:var(--c-active)"></span> Município com pelo menos 1 funcionário ATIVO</div>
-      <div class="row"><span class="swatch" style="background:var(--c-inactive)"></span> Município com funcionários, mas nenhum ATIVO</div>
-      <div class="row"><span class="swatch" style="background:var(--c-none)"></span> Sem funcionários alocados</div>
-      <div class="row"><span class="swatch" style="background:rgba(255,111,0,.22); border-color:rgba(255,111,0,.6)"></span> Município selecionado (destaque)</div>
+  <!-- Botão da legenda (topo direito) -->
+  <div class="legend-open-wrap">
+    <button class="btn" id="btnLegendOpen">Legenda</button>
+  </div>
+
+  <!-- Card da legenda (flutuante, recolhível) -->
+  <div class="card legend-pop is-hidden" id="legendCard">
+    <div class="legend-head">
+      <div class="legend-title">Legenda</div>
+      <button class="btn" id="btnLegendClose">Fechar</button>
+    </div>
+
+    <div class="legend-body">
+      <div class="legend-row">
+        <span class="swatch" style="background:var(--c-active)"></span>
+        Município com pelo menos 1 funcionário ATIVO
+      </div>
+
+      <div class="legend-row">
+        <span class="swatch" style="background:var(--c-inactive)"></span>
+        Município com funcionários, mas nenhum ATIVO
+      </div>
+
+      <div class="legend-row">
+        <span class="swatch" style="background:var(--c-none)"></span>
+        Sem funcionários alocados
+      </div>
+
+      <div class="legend-row">
+        <span class="swatch" style="background:rgba(255,111,0,.22); border-color:rgba(255,111,0,.6)"></span>
+        Município selecionado (destaque)
+      </div>
     </div>
   </div>
 
@@ -584,6 +641,10 @@
     const layout = document.querySelector('.layout');
     let autoCloseTimeout = null;
 
+    const btnLegendOpen = $('btnLegendOpen');
+    const btnLegendClose = $('btnLegendClose');
+    const legendCard = $('legendCard');
+
     let editingEmployeeInternalId = null;
 
     function showToast(msg){
@@ -609,7 +670,7 @@
         if (autoClose){
           autoCloseTimeout = setTimeout(() => {
             setRightPanelOpen(false);
-          }, 5000); // fecha após 5s
+          }, 5000);
         }
       } else {
         rightPanel.classList.add('is-hidden');
@@ -621,6 +682,17 @@
     function toggleRightPanel(){
       const open = !rightPanel.classList.contains('is-hidden');
       setRightPanelOpen(!open);
+    }
+
+    function setLegendOpen(open){
+      if (!legendCard) return;
+      if (open) legendCard.classList.remove('is-hidden');
+      else legendCard.classList.add('is-hidden');
+    }
+
+    function toggleLegend(){
+      const open = !legendCard.classList.contains('is-hidden');
+      setLegendOpen(!open);
     }
 
     function normalize(str){
@@ -963,7 +1035,7 @@
 
       allocList.innerHTML = '';
       if (!groups.length){
-        allocList.innerHTML = `<div class="muted" style="font-size:12px;">Nenhuma alocação cadastrada. Selecione um município e clique em “Adicionar funcionário”.</div>`;
+        allocList.innerHTML = `<div class="muted" style="font-size:12px;">Nenhuma alocação cadastrada. Selecione um município e clique em "Adicionar funcionário".</div>`;
         return;
       }
 
@@ -1193,7 +1265,6 @@
         renderAllocationsPanel();
         showModal(false);
 
-        // abre painel automaticamente e fecha depois de 5s
         setRightPanelOpen(true, true);
 
         showToast('Funcionário adicionado.');
@@ -1275,8 +1346,8 @@
       renderAllocationsPanel();
       showToast('Mapa pronto.');
 
-      // inicia com painel de funcionários fechado
       setRightPanelOpen(false);
+      setLegendOpen(false);
     }
 
     btnAdd.onclick = openModalForAdd;
@@ -1314,6 +1385,9 @@
 
     btnToggleRight.onclick = () => toggleRightPanel();
     btnCloseRight.onclick = () => setRightPanelOpen(false);
+
+    btnLegendOpen.onclick = () => toggleLegend();
+    btnLegendClose.onclick = () => setLegendOpen(false);
 
     init().catch(err => {
       console.error(err);
