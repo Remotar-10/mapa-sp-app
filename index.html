@@ -24,37 +24,48 @@
     html, body { height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
     #map { height:100%; width:100%; }
 
-    .topbar{
-      position:absolute; top:16px; left:16px; right:16px;
-      display:flex; gap:12px; z-index:1000; pointer-events:none;
-    }
-
     .card{
-      pointer-events:auto;
       background:var(--panel);
       border-radius:10px;
       box-shadow:0 10px 30px rgba(0,0,0,.18);
       border:1px solid rgba(17,24,39,.06);
     }
 
-    .header{
-      padding:14px 16px;
-      max-width:520px;
-    }
-    .header h1{
-      margin:0;
-      font-size:16px;
-      color:var(--brand);
-      font-weight:800;
-      letter-spacing:.2px;
-    }
-    .header p{
-      margin:6px 0 0 0;
+    .btn{
+      padding:9px 10px;
+      border-radius:8px;
+      border:1px solid rgba(17,24,39,.12);
+      background:#fff;
+      cursor:pointer;
       font-size:12px;
-      color:var(--muted);
-      line-height:1.35;
+      font-weight:800;
+      color:#111827;
+      user-select:none;
+      line-height:1;
+    }
+    .btn.primary{
+      background:var(--brand);
+      border-color:var(--brand);
+      color:#fff;
+    }
+    .btn.danger{
+      background:#b91c1c;
+      border-color:#b91c1c;
+      color:#fff;
+    }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+    /* Botões menores (para Info/Legenda/Funcionários) */
+    .btn.xs{
+      padding:6px 8px;
+      border-radius:8px;
+      font-size:11px;
+      font-weight:900;
     }
 
+    .muted{ color:var(--muted); }
+
+    /* LAYOUT PRINCIPAL */
     .layout{
       position:absolute; top:86px; left:16px; right:16px; bottom:16px;
       display:grid;
@@ -62,6 +73,11 @@
       gap:12px;
       z-index:1000;
       pointer-events:none;
+    }
+
+    /* Quando o cabeçalho estiver fechado, sobe tudo para ocupar a área */
+    .layout.no-header{
+      top:16px;
     }
 
     @media (max-width: 1180px){
@@ -125,33 +141,6 @@
       border:1px solid rgba(17,24,39,.12);
       font-size:13px;
     }
-    .btn{
-      padding:9px 10px;
-      border-radius:8px;
-      border:1px solid rgba(17,24,39,.12);
-      background:#fff;
-      cursor:pointer;
-      font-size:12px;
-      font-weight:800;
-      color:#111827;
-      user-select:none;
-    }
-    .btn.primary{
-      background:var(--brand);
-      border-color:var(--brand);
-      color:#fff;
-    }
-    .btn.danger{
-      background:#b91c1c;
-      border-color:#b91c1c;
-      color:#fff;
-    }
-    .btn:disabled{
-      opacity:.55;
-      cursor:not-allowed;
-    }
-
-    .muted{ color:var(--muted); }
 
     .kv{
       display:grid;
@@ -317,7 +306,7 @@
       transform: translateY(0);
     }
 
-    /* painel direito recolhível */
+    /* PAINEL DIREITO (FUNCIONÁRIOS) recolhível */
     .layout.no-right{
       grid-template-columns: 360px 1fr;
     }
@@ -325,7 +314,54 @@
       display:none;
     }
 
-    /* legenda recolhível */
+    /* CABEÇALHO recolhível (igual à legenda) */
+    .header-open-wrap{
+      position:absolute;
+      top:16px;
+      left:16px;
+      z-index:1200;
+      pointer-events:auto;
+    }
+    .header-open-wrap.is-hidden{ display:none; }
+
+    .header-pop{
+      position:absolute;
+      top:16px;
+      left:16px;
+      z-index:1200;
+      width:620px;
+      max-width: calc(100vw - 32px);
+      pointer-events:auto;
+    }
+    .header-pop.is-hidden{ display:none; }
+
+    .header-head{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(17,24,39,.10);
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:10px;
+    }
+    .header-title{
+      margin:0;
+      font-size:16px;
+      color:var(--brand);
+      font-weight:900;
+      letter-spacing:.2px;
+      line-height:1.1;
+    }
+    .header-body{
+      padding:10px 14px 12px 14px;
+    }
+    .header-body p{
+      margin:6px 0 0 0;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+
+    /* LEGENDA recolhível */
     .legend-open-wrap{
       position:absolute;
       top:16px;
@@ -343,10 +379,7 @@
       max-width: calc(100vw - 32px);
       pointer-events:auto;
     }
-
-    .legend-pop.is-hidden{
-      display:none;
-    }
+    .legend-pop.is-hidden{ display:none; }
 
     .legend-head{
       padding:12px 14px;
@@ -356,17 +389,14 @@
       align-items:center;
       gap:10px;
     }
-
     .legend-title{
       font-weight:950;
       color:#111827;
       font-size:13px;
     }
-
     .legend-body{
       padding:12px 14px;
     }
-
     .legend-row{
       display:flex;
       gap:10px;
@@ -376,7 +406,6 @@
       line-height:1.35;
       margin:8px 0;
     }
-
     .swatch{
       width:12px; height:12px; border-radius:3px;
       border:1px solid rgba(17,24,39,.12);
@@ -388,26 +417,37 @@
 <body>
   <div id="map"></div>
 
-  <div class="topbar">
-    <div class="card header">
-      <h1>São Paulo | Alocação de Funcionários</h1>
+  <!-- Botão pequeno do cabeçalho -->
+  <div class="header-open-wrap" id="headerOpenWrap">
+    <button class="btn xs" id="btnHeaderOpen">Info</button>
+  </div>
+
+  <!-- Cabeçalho (card) recolhível -->
+  <div class="card header-pop is-hidden" id="headerCard">
+    <div class="header-head">
+      <div>
+        <div class="header-title">São Paulo | Alocação de Funcionários</div>
+      </div>
+      <button class="btn xs" id="btnHeaderClose">Fechar</button>
+    </div>
+    <div class="header-body">
       <p>Selecione um município no mapa ou pela busca. Adicione funcionários por município ou por região.</p>
-      <p id="focusAreaLabel" style="margin-top:4px;font-size:11px;color:#4b5563;font-weight:600;">
+      <p id="focusAreaLabel" style="margin-top:6px;font-size:11px;color:#4b5563;font-weight:700;">
         Área em foco: Estado de São Paulo
       </p>
     </div>
   </div>
 
-  <!-- Botão da legenda (topo direito) -->
+  <!-- Botão pequeno da legenda -->
   <div class="legend-open-wrap">
-    <button class="btn" id="btnLegendOpen">Legenda</button>
+    <button class="btn xs" id="btnLegendOpen">Legenda</button>
   </div>
 
-  <!-- Card da legenda (flutuante, recolhível) -->
+  <!-- Card da legenda recolhível -->
   <div class="card legend-pop is-hidden" id="legendCard">
     <div class="legend-head">
       <div class="legend-title">Legenda</div>
-      <button class="btn" id="btnLegendClose">Fechar</button>
+      <button class="btn xs" id="btnLegendClose">Fechar</button>
     </div>
 
     <div class="legend-body">
@@ -433,7 +473,7 @@
     </div>
   </div>
 
-  <div class="layout">
+  <div class="layout" id="layout">
     <div class="card leftpanel">
       <div class="panel-head">
         <div>
@@ -441,7 +481,7 @@
           <div class="sub" id="selSub">Nenhum município selecionado</div>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
-          <button class="btn" id="btnToggleRight">Funcionários</button>
+          <button class="btn xs" id="btnToggleRight">Funcionários</button>
           <button class="btn primary" id="btnAdd" disabled>Adicionar funcionário</button>
         </div>
       </div>
@@ -486,8 +526,8 @@
           <div class="sub" id="countSub">Carregando...</div>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
-          <button class="btn" id="btnZoomSP">Ver SP</button>
-          <button class="btn" id="btnCloseRight">Fechar</button>
+          <button class="btn xs" id="btnZoomSP">Ver SP</button>
+          <button class="btn xs" id="btnCloseRight">Fechar</button>
         </div>
       </div>
 
@@ -594,6 +634,8 @@
 
     const $ = (id) => document.getElementById(id);
 
+    const layout = $('layout');
+
     const btnAdd = $('btnAdd');
     const searchInput = $('searchInput');
     const searchResults = $('searchResults');
@@ -635,15 +677,22 @@
     const toast = $('toast');
     const focusAreaLabel = $('focusAreaLabel');
 
+    // Painel direito
     const btnToggleRight = $('btnToggleRight');
     const btnCloseRight = $('btnCloseRight');
     const rightPanel = document.querySelector('.rightpanel');
-    const layout = document.querySelector('.layout');
     let autoCloseTimeout = null;
 
+    // Legenda
     const btnLegendOpen = $('btnLegendOpen');
     const btnLegendClose = $('btnLegendClose');
     const legendCard = $('legendCard');
+
+    // Cabeçalho
+    const headerOpenWrap = $('headerOpenWrap');
+    const btnHeaderOpen = $('btnHeaderOpen');
+    const btnHeaderClose = $('btnHeaderClose');
+    const headerCard = $('headerCard');
 
     let editingEmployeeInternalId = null;
 
@@ -693,6 +742,20 @@
     function toggleLegend(){
       const open = !legendCard.classList.contains('is-hidden');
       setLegendOpen(!open);
+    }
+
+    function setHeaderOpen(open){
+      if (!headerCard || !layout || !headerOpenWrap) return;
+
+      if (open){
+        headerCard.classList.remove('is-hidden');
+        headerOpenWrap.classList.add('is-hidden');
+        layout.classList.remove('no-header');
+      } else {
+        headerCard.classList.add('is-hidden');
+        headerOpenWrap.classList.remove('is-hidden');
+        layout.classList.add('no-header');
+      }
     }
 
     function normalize(str){
@@ -1123,7 +1186,8 @@
             const [gkey, idxStr] = token.split('::');
             const idx = Number(idxStr);
 
-            const group = groups.find(x => x.key === gkey);
+            const groupsNow = groupEmployeesByLocality();
+            const group = groupsNow.find(x => x.key === gkey);
             if (!group) return;
 
             const emp = group.employees.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'))[idx];
@@ -1266,7 +1330,6 @@
         showModal(false);
 
         setRightPanelOpen(true, true);
-
         showToast('Funcionário adicionado.');
         return;
       }
@@ -1346,14 +1409,18 @@
       renderAllocationsPanel();
       showToast('Mapa pronto.');
 
+      // Estados iniciais
       setRightPanelOpen(false);
       setLegendOpen(false);
+
+      // Cabeçalho inicia fechado para ganhar espaço
+      setHeaderOpen(false);
     }
 
+    // Eventos modal
     btnAdd.onclick = openModalForAdd;
     btnCloseModal.onclick = () => showModal(false);
     modalBackdrop.onclick = (e) => { if (e.target === modalBackdrop) showModal(false); };
-
     btnSave.onclick = saveEmployee;
     btnDelete.onclick = deleteEmployee;
 
@@ -1361,6 +1428,7 @@
     fRegionField.onchange = () => { fRegionValue.value = ''; syncTypeFields(); };
     fRegionValue.oninput = () => syncTypeFields();
 
+    // Busca
     btnClearSearch.onclick = () => {
       searchInput.value = '';
       searchResults.innerHTML = '';
@@ -1376,18 +1444,23 @@
       renderSearchResults(matches);
     };
 
+    // Botões do painel direito
     btnZoomSP.onclick = () => {
       if (municipiosLayer){
         map.fitBounds(municipiosLayer.getBounds(), { padding:[30,30] });
         updateFocusAreaLabel('Estado de São Paulo');
       }
     };
-
     btnToggleRight.onclick = () => toggleRightPanel();
     btnCloseRight.onclick = () => setRightPanelOpen(false);
 
+    // Legenda (sem auto-fechar)
     btnLegendOpen.onclick = () => toggleLegend();
     btnLegendClose.onclick = () => setLegendOpen(false);
+
+    // Cabeçalho (sem auto-fechar)
+    btnHeaderOpen.onclick = () => setHeaderOpen(true);
+    btnHeaderClose.onclick = () => setHeaderOpen(false);
 
     init().catch(err => {
       console.error(err);
