@@ -55,10 +55,10 @@
     }
     .btn:disabled{ opacity:.55; cursor:not-allowed; }
 
-    /* Botões menores (para Info/Legenda/Funcionários) */
+    /* botão menor para Funcionários / Ver SP / Fechar painel */
     .btn.xs{
-      padding:6px 8px;
-      border-radius:8px;
+      padding:6px 12px;
+      border-radius:999px;
       font-size:11px;
       font-weight:900;
     }
@@ -67,17 +67,12 @@
 
     /* LAYOUT PRINCIPAL */
     .layout{
-      position:absolute; top:86px; left:16px; right:16px; bottom:16px;
+      position:absolute; top:16px; left:16px; right:16px; bottom:16px;
       display:grid;
       grid-template-columns: 360px 1fr 460px;
       gap:12px;
       z-index:1000;
       pointer-events:none;
-    }
-
-    /* Quando o cabeçalho estiver fechado, sobe tudo para ocupar a área */
-    .layout.no-header{
-      top:16px;
     }
 
     @media (max-width: 1180px){
@@ -313,165 +308,11 @@
     .rightpanel.is-hidden{
       display:none;
     }
-
-    /* CABEÇALHO recolhível (igual à legenda) */
-    .header-open-wrap{
-      position:absolute;
-      top:16px;
-      left:16px;
-      z-index:1200;
-      pointer-events:auto;
-    }
-    .header-open-wrap.is-hidden{ display:none; }
-
-    .header-pop{
-      position:absolute;
-      top:16px;
-      left:16px;
-      z-index:1200;
-      width:620px;
-      max-width: calc(100vw - 32px);
-      pointer-events:auto;
-    }
-    .header-pop.is-hidden{ display:none; }
-
-    .header-head{
-      padding:12px 14px;
-      border-bottom:1px solid rgba(17,24,39,.10);
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:10px;
-    }
-    .header-title{
-      margin:0;
-      font-size:16px;
-      color:var(--brand);
-      font-weight:900;
-      letter-spacing:.2px;
-      line-height:1.1;
-    }
-    .header-body{
-      padding:10px 14px 12px 14px;
-    }
-    .header-body p{
-      margin:6px 0 0 0;
-      font-size:12px;
-      color:var(--muted);
-      line-height:1.35;
-    }
-
-    /* LEGENDA recolhível */
-    .legend-open-wrap{
-      position:absolute;
-      top:16px;
-      right:16px;
-      z-index:1200;
-      pointer-events:auto;
-    }
-
-    .legend-pop{
-      position:absolute;
-      top:56px;
-      right:16px;
-      z-index:1200;
-      width:360px;
-      max-width: calc(100vw - 32px);
-      pointer-events:auto;
-    }
-    .legend-pop.is-hidden{ display:none; }
-
-    .legend-head{
-      padding:12px 14px;
-      border-bottom:1px solid rgba(17,24,39,.10);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-    }
-    .legend-title{
-      font-weight:950;
-      color:#111827;
-      font-size:13px;
-    }
-    .legend-body{
-      padding:12px 14px;
-    }
-    .legend-row{
-      display:flex;
-      gap:10px;
-      align-items:flex-start;
-      font-size:12px;
-      color:#374151;
-      line-height:1.35;
-      margin:8px 0;
-    }
-    .swatch{
-      width:12px; height:12px; border-radius:3px;
-      border:1px solid rgba(17,24,39,.12);
-      flex:0 0 12px;
-    }
   </style>
 </head>
 
 <body>
   <div id="map"></div>
-
-  <!-- Botão pequeno do cabeçalho -->
-  <div class="header-open-wrap" id="headerOpenWrap">
-    <button class="btn xs" id="btnHeaderOpen">Info</button>
-  </div>
-
-  <!-- Cabeçalho (card) recolhível -->
-  <div class="card header-pop is-hidden" id="headerCard">
-    <div class="header-head">
-      <div>
-        <div class="header-title">São Paulo | Alocação de Funcionários</div>
-      </div>
-      <button class="btn xs" id="btnHeaderClose">Fechar</button>
-    </div>
-    <div class="header-body">
-      <p>Selecione um município no mapa ou pela busca. Adicione funcionários por município ou por região.</p>
-      <p id="focusAreaLabel" style="margin-top:6px;font-size:11px;color:#4b5563;font-weight:700;">
-        Área em foco: Estado de São Paulo
-      </p>
-    </div>
-  </div>
-
-  <!-- Botão pequeno da legenda -->
-  <div class="legend-open-wrap">
-    <button class="btn xs" id="btnLegendOpen">Legenda</button>
-  </div>
-
-  <!-- Card da legenda recolhível -->
-  <div class="card legend-pop is-hidden" id="legendCard">
-    <div class="legend-head">
-      <div class="legend-title">Legenda</div>
-      <button class="btn xs" id="btnLegendClose">Fechar</button>
-    </div>
-
-    <div class="legend-body">
-      <div class="legend-row">
-        <span class="swatch" style="background:var(--c-active)"></span>
-        Município com pelo menos 1 funcionário ATIVO
-      </div>
-
-      <div class="legend-row">
-        <span class="swatch" style="background:var(--c-inactive)"></span>
-        Município com funcionários, mas nenhum ATIVO
-      </div>
-
-      <div class="legend-row">
-        <span class="swatch" style="background:var(--c-none)"></span>
-        Sem funcionários alocados
-      </div>
-
-      <div class="legend-row">
-        <span class="swatch" style="background:rgba(255,111,0,.22); border-color:rgba(255,111,0,.6)"></span>
-        Município selecionado (destaque)
-      </div>
-    </div>
-  </div>
 
   <div class="layout" id="layout">
     <div class="card leftpanel">
@@ -675,24 +516,10 @@
     const regionValueWrap = $('regionValueWrap');
 
     const toast = $('toast');
-    const focusAreaLabel = $('focusAreaLabel');
 
-    // Painel direito
     const btnToggleRight = $('btnToggleRight');
     const btnCloseRight = $('btnCloseRight');
     const rightPanel = document.querySelector('.rightpanel');
-    let autoCloseTimeout = null;
-
-    // Legenda
-    const btnLegendOpen = $('btnLegendOpen');
-    const btnLegendClose = $('btnLegendClose');
-    const legendCard = $('legendCard');
-
-    // Cabeçalho
-    const headerOpenWrap = $('headerOpenWrap');
-    const btnHeaderOpen = $('btnHeaderOpen');
-    const btnHeaderClose = $('btnHeaderClose');
-    const headerCard = $('headerCard');
 
     let editingEmployeeInternalId = null;
 
@@ -700,27 +527,15 @@
       toast.textContent = msg;
       toast.classList.add('show');
       clearTimeout(showToast._t);
-      showToast._t = setTimeout(() => toast.classList.remove('show'), 2200);
+      toast._t = setTimeout(() => toast.classList.remove('show'), 2200);
     }
 
-    function setRightPanelOpen(open, autoClose = false){
+    function setRightPanelOpen(open){
       if (!rightPanel || !layout) return;
-
-      if (autoCloseTimeout){
-        clearTimeout(autoCloseTimeout);
-        autoCloseTimeout = null;
-      }
-
       if (open){
         rightPanel.classList.remove('is-hidden');
         layout.classList.remove('no-right');
         btnToggleRight.textContent = 'Fechar lista';
-
-        if (autoClose){
-          autoCloseTimeout = setTimeout(() => {
-            setRightPanelOpen(false);
-          }, 5000);
-        }
       } else {
         rightPanel.classList.add('is-hidden');
         layout.classList.add('no-right');
@@ -731,31 +546,6 @@
     function toggleRightPanel(){
       const open = !rightPanel.classList.contains('is-hidden');
       setRightPanelOpen(!open);
-    }
-
-    function setLegendOpen(open){
-      if (!legendCard) return;
-      if (open) legendCard.classList.remove('is-hidden');
-      else legendCard.classList.add('is-hidden');
-    }
-
-    function toggleLegend(){
-      const open = !legendCard.classList.contains('is-hidden');
-      setLegendOpen(!open);
-    }
-
-    function setHeaderOpen(open){
-      if (!headerCard || !layout || !headerOpenWrap) return;
-
-      if (open){
-        headerCard.classList.remove('is-hidden');
-        headerOpenWrap.classList.add('is-hidden');
-        layout.classList.remove('no-header');
-      } else {
-        headerCard.classList.add('is-hidden');
-        headerOpenWrap.classList.remove('is-hidden');
-        layout.classList.add('no-header');
-      }
     }
 
     function normalize(str){
@@ -974,12 +764,6 @@
       if (municipiosLayer) municipiosLayer.resetStyle(e.target);
     }
 
-    function updateFocusAreaLabel(text){
-      if (focusAreaLabel) {
-        focusAreaLabel.textContent = 'Área em foco: ' + text;
-      }
-    }
-
     function selectMunicipioByFeature(feature, layer){
       selectedFeature = feature;
       selectedCode = getCodigo(feature.properties);
@@ -991,8 +775,6 @@
       selNome.textContent = name;
       selCodigo.textContent = selectedCode || '-';
       selRegiao.textContent = getMunicipioRegionSummary(feature.properties);
-
-      updateFocusAreaLabel('Município ' + name);
 
       pillSelected.style.display = selectedCode ? 'inline-flex' : 'none';
 
@@ -1171,7 +953,6 @@
             if (layers.length){
               const groupLayer = L.featureGroup(layers);
               map.fitBounds(groupLayer.getBounds(), { padding:[40,40], maxZoom: 10, animate:true, duration:0.6 });
-              updateFocusAreaLabel('Região ' + value);
               showToast(`Foco na região: ${value}`);
             } else {
               showToast('Não foi possível focar: sem camadas encontradas.');
@@ -1252,6 +1033,9 @@
       fRegionValue.value = '';
       syncTypeFields();
 
+      // ao adicionar, já abrir painel de funcionários
+      setRightPanelOpen(true);
+
       showModal(true);
     }
 
@@ -1284,6 +1068,7 @@
         fTarget.value = `${nome} (${code || '-'})`;
       }
 
+      setRightPanelOpen(true);
       showModal(true);
     }
 
@@ -1323,24 +1108,18 @@
 
       if (editingEmployeeInternalId === null){
         db.employees.push(emp);
-        saveDbToLocalStorage();
-        rebuildStats();
-        if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
-        renderAllocationsPanel();
-        showModal(false);
-
-        setRightPanelOpen(true, true);
-        showToast('Funcionário adicionado.');
-        return;
+      } else {
+        db.employees[editingEmployeeInternalId] = emp;
       }
 
-      db.employees[editingEmployeeInternalId] = emp;
       saveDbToLocalStorage();
       rebuildStats();
       if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
       renderAllocationsPanel();
       showModal(false);
-      showToast('Funcionário atualizado.');
+      setRightPanelOpen(true);
+      showToast(editingEmployeeInternalId === null ? 'Funcionário adicionado.' : 'Funcionário atualizado.');
+      editingEmployeeInternalId = null;
     }
 
     function deleteEmployee(){
@@ -1405,19 +1184,12 @@
       }).addTo(map);
 
       map.fitBounds(municipiosLayer.getBounds(), { padding:[30,30] });
-      updateFocusAreaLabel('Estado de São Paulo');
       renderAllocationsPanel();
       showToast('Mapa pronto.');
 
-      // Estados iniciais
       setRightPanelOpen(false);
-      setLegendOpen(false);
-
-      // Cabeçalho inicia fechado para ganhar espaço
-      setHeaderOpen(false);
     }
 
-    // Eventos modal
     btnAdd.onclick = openModalForAdd;
     btnCloseModal.onclick = () => showModal(false);
     modalBackdrop.onclick = (e) => { if (e.target === modalBackdrop) showModal(false); };
@@ -1428,7 +1200,6 @@
     fRegionField.onchange = () => { fRegionValue.value = ''; syncTypeFields(); };
     fRegionValue.oninput = () => syncTypeFields();
 
-    // Busca
     btnClearSearch.onclick = () => {
       searchInput.value = '';
       searchResults.innerHTML = '';
@@ -1444,23 +1215,13 @@
       renderSearchResults(matches);
     };
 
-    // Botões do painel direito
     btnZoomSP.onclick = () => {
       if (municipiosLayer){
         map.fitBounds(municipiosLayer.getBounds(), { padding:[30,30] });
-        updateFocusAreaLabel('Estado de São Paulo');
       }
     };
-    btnToggleRight.onclick = () => toggleRightPanel();
+    btnToggleRight.onclick = () => setRightPanelOpen(true);
     btnCloseRight.onclick = () => setRightPanelOpen(false);
-
-    // Legenda (sem auto-fechar)
-    btnLegendOpen.onclick = () => toggleLegend();
-    btnLegendClose.onclick = () => setLegendOpen(false);
-
-    // Cabeçalho (sem auto-fechar)
-    btnHeaderOpen.onclick = () => setHeaderOpen(true);
-    btnHeaderClose.onclick = () => setHeaderOpen(false);
 
     init().catch(err => {
       console.error(err);
