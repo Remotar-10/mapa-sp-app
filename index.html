@@ -1,1232 +1,1223 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>São Paulo | Alocação de Funcionários por Município</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>São Paulo | Alocação de Funcionários por Município</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
-  <style>
-    :root{
-      --panel:#ffffff;
-      --muted:#6b7280;
-      --text:#111827;
-      --brand:#1e3a8a;
+<style>
+:root{
+--panel:#ffffff;
+--muted:#6b7280;
+--text:#111827;
+--brand:#1e3a8a;
 
-      --c-none:#bdbdbd;
-      --c-inactive:#c62828;
-      --c-active:#2e7d32;
+  --c-none:#bdbdbd;
+  --c-inactive:#c62828;
+  --c-active:#2e7d32;
 
-      --c-selected:#ff6f00;
-    }
+  --c-selected:#ff6f00;
+}
 
-    html, body { height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    #map { height:100%; width:100%; }
+html, body { height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+body{ overflow:hidden; background:#f3f4f6; }
 
-    .card{
-      background:var(--panel);
-      border-radius:10px;
-      box-shadow:0 10px 30px rgba(0,0,0,.18);
-      border:1px solid rgba(17,24,39,.06);
-    }
+/* APP GRID (2 colunas) */
+.app{
+  position:fixed;
+  inset:16px;
+  display:grid;
+  grid-template-columns: 1fr 460px;
+  gap:12px;
+  box-sizing:border-box;
+}
 
-    .btn{
-      padding:9px 10px;
-      border-radius:8px;
-      border:1px solid rgba(17,24,39,.12);
-      background:#fff;
-      cursor:pointer;
-      font-size:12px;
-      font-weight:800;
-      color:#111827;
-      user-select:none;
-      line-height:1;
-    }
-    .btn.primary{
-      background:var(--brand);
-      border-color:var(--brand);
-      color:#fff;
-    }
-    .btn.danger{
-      background:#b91c1c;
-      border-color:#b91c1c;
-      color:#fff;
-    }
-    .btn:disabled{ opacity:.55; cursor:not-allowed; }
+/* MAPA */
+#map, .map { height:100%; width:100%; }
+.map{
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+  border:1px solid rgba(17,24,39,.06);
+  background:#fff;
+}
 
-    /* botão menor para Funcionários / Ver SP / Fechar painel */
-    .btn.xs{
-      padding:6px 12px;
-      border-radius:999px;
-      font-size:11px;
-      font-weight:900;
-    }
+/* CARD / PAINEL */
+.card{
+  background:var(--panel);
+  border-radius:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+  border:1px solid rgba(17,24,39,.06);
+}
 
-    .muted{ color:var(--muted); }
+.panel{
+  display:flex;
+  flex-direction:column;
+  min-height:180px;
+  overflow:hidden;
+  pointer-events:auto;
+}
 
-    /* LAYOUT PRINCIPAL */
-    .layout{
-      position:absolute; top:16px; left:16px; right:16px; bottom:16px;
-      display:grid;
-      grid-template-columns: 360px 1fr 460px;
-      gap:12px;
-      z-index:1000;
-      pointer-events:none;
-    }
+.panel-head{
+  padding:12px 14px;
+  border-bottom:1px solid rgba(17,24,39,.08);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+.panel-head .title{
+  font-weight:900;
+  color:#111827;
+  font-size:13px;
+}
+.panel-head .sub{
+  color:var(--muted);
+  font-size:11px;
+  margin-top:2px;
+  line-height:1.25;
+}
 
-    @media (max-width: 1180px){
-      .layout{
-        grid-template-columns: 340px 1fr;
-        grid-template-rows: auto 1fr;
-      }
-      .rightpanel{ grid-column:1 / -1; grid-row:2; max-height:42vh; }
-      .mapmask{ grid-column:1 / -1; grid-row:1; }
-    }
+.panel-body{
+  padding:12px 14px;
+  overflow:auto;
+  flex:1;
+}
 
-    @media (max-width: 860px){
-      .layout{ grid-template-columns: 1fr; grid-template-rows: auto auto 1fr; }
-      .leftpanel{ grid-row:1; }
-      .rightpanel{ grid-row:2; max-height:46vh; }
-      .mapmask{ grid-row:3; }
-    }
+.section{ display:block; }
 
-    .leftpanel, .rightpanel{
-      pointer-events:auto;
-      overflow:hidden;
-      display:flex;
-      flex-direction:column;
-      min-height:180px;
-    }
+.divider{
+  height:1px;
+  background: rgba(17,24,39,.10);
+  margin:12px 0;
+}
 
-    .panel-head{
-      padding:12px 14px;
-      border-bottom:1px solid rgba(17,24,39,.08);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-    }
-    .panel-head .title{
-      font-weight:900;
-      color:#111827;
-      font-size:13px;
-    }
-    .panel-head .sub{
-      color:var(--muted);
-      font-size:11px;
-      margin-top:2px;
-      line-height:1.25;
-    }
+.btn{
+  padding:9px 10px;
+  border-radius:8px;
+  border:1px solid rgba(17,24,39,.12);
+  background:#fff;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:800;
+  color:#111827;
+  user-select:none;
+  line-height:1;
+}
+.btn.primary{
+  background:var(--brand);
+  border-color:var(--brand);
+  color:#fff;
+}
+.btn.danger{
+  background:#b91c1c;
+  border-color:#b91c1c;
+  color:#fff;
+}
+.btn:disabled{ opacity:.55; cursor:not-allowed; }
 
-    .panel-body{
-      padding:12px 14px;
-      overflow:auto;
-      flex:1;
-    }
+.btn.xs{
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+}
 
-    .search{
-      display:flex; gap:8px;
-      margin-bottom:10px;
-    }
-    .input{
-      width:100%;
-      padding:9px 10px;
-      border-radius:8px;
-      border:1px solid rgba(17,24,39,.12);
-      font-size:13px;
-    }
+.muted{ color:var(--muted); }
 
-    .kv{
-      display:grid;
-      grid-template-columns: 120px 1fr;
-      gap:6px 10px;
-      font-size:12px;
-      margin:8px 0 10px 0;
-    }
-    .kv div:nth-child(odd){ color:var(--muted); }
-    .kv div:nth-child(even){ color:#111827; font-weight:700; }
+.search{
+  display:flex; gap:8px;
+  margin-bottom:10px;
+}
 
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding:3px 8px;
-      border-radius:999px;
-      font-size:11px;
-      font-weight:900;
-      border:1px solid rgba(17,24,39,.12);
-      background:#fff;
-      color:#111827;
-    }
-    .pill.green{ background:#e8f5e9; border-color:#c8e6c9; color:#1b5e20; }
-    .pill.red{ background:#ffebee; border-color:#ffcdd2; color:#b71c1c; }
-    .pill.gray{ background:#f3f4f6; border-color:#e5e7eb; color:#374151; }
-    .pill.orange{ background:#fff3e0; border-color:#ffe0b2; color:#e65100; }
+input, .input{
+  width:100%;
+  padding:9px 10px;
+  border-radius:8px;
+  border:1px solid rgba(17,24,39,.12);
+  font-size:13px;
+  box-sizing:border-box;
+  background:#fff;
+}
 
-    .list{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-    }
-    .item{
-      border:1px solid rgba(17,24,39,.10);
-      border-radius:10px;
-      padding:10px 10px;
-      background:#fff;
-    }
-    .item .row{
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:flex-start;
-    }
-    .item .name{
-      font-weight:950;
-      color:#111827;
-      font-size:13px;
-      line-height:1.2;
-    }
-    .item .meta{
-      font-size:12px;
-      color:var(--muted);
-      margin-top:4px;
-      line-height:1.25;
-    }
-    .item .actions{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      white-space:nowrap;
-    }
-    .link{
-      font-size:12px;
-      color:var(--brand);
-      font-weight:900;
-      cursor:pointer;
-      user-select:none;
-    }
+.kv{
+  display:grid;
+  grid-template-columns: 120px 1fr;
+  gap:6px 10px;
+  font-size:12px;
+  margin:8px 0 10px 0;
+}
+.kv div:nth-child(odd){ color:var(--muted); }
+.kv div:nth-child(even){ color:#111827; font-weight:700; }
 
-    .mapmask{ pointer-events:none; }
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:3px 8px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+  border:1px solid rgba(17,24,39,.12);
+  background:#fff;
+  color:#111827;
+}
+.pill.green{ background:#e8f5e9; border-color:#c8e6c9; color:#1b5e20; }
+.pill.red{ background:#ffebee; border-color:#ffcdd2; color:#b71c1c; }
+.pill.gray{ background:#f3f4f6; border-color:#e5e7eb; color:#374151; }
+.pill.orange{ background:#fff3e0; border-color:#ffe0b2; color:#e65100; }
 
-    .modal-backdrop{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,.45);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      z-index:2000;
-      padding:16px;
-    }
-    .modal{
-      width:min(760px, 100%);
-      background:#fff;
-      border-radius:14px;
-      box-shadow:0 20px 60px rgba(0,0,0,.35);
-      overflow:hidden;
-      border:1px solid rgba(17,24,39,.12);
-    }
-    .modal-head{
-      padding:14px 16px;
-      border-bottom:1px solid rgba(17,24,39,.10);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-    }
-    .modal-head .t{
-      font-weight:950;
-      color:#111827;
-      font-size:14px;
-    }
-    .modal-body{
-      padding:14px 16px;
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px 12px;
-    }
-    @media (max-width: 860px){
-      .modal-body{ grid-template-columns: 1fr; }
-    }
+.list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
 
-    .field label{
-      display:block;
-      font-size:12px;
-      font-weight:900;
-      color:#111827;
-      margin-bottom:6px;
-    }
-    .field input, .field select{
-      width:100%;
-      padding:10px 10px;
-      border-radius:10px;
-      border:1px solid rgba(17,24,39,.14);
-      font-size:13px;
-      box-sizing:border-box;
-    }
-    .modal-foot{
-      padding:12px 16px;
-      border-top:1px solid rgba(17,24,39,.10);
-      display:flex;
-      justify-content:space-between;
-      gap:10px;
-      align-items:center;
-    }
-    .note{
-      font-size:11px;
-      color:var(--muted);
-      line-height:1.35;
-      max-width: 520px;
-    }
+.item{
+  border:1px solid rgba(17,24,39,.10);
+  border-radius:10px;
+  padding:10px 10px;
+  background:#fff;
+}
+.item .row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:flex-start;
+}
+.item .name{
+  font-weight:950;
+  color:#111827;
+  font-size:13px;
+  line-height:1.2;
+}
+.item .meta{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+  line-height:1.25;
+}
+.item .actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  white-space:nowrap;
+}
+.link{
+  font-size:12px;
+  color:var(--brand);
+  font-weight:900;
+  cursor:pointer;
+  user-select:none;
+}
 
-    .toast{
-      position:fixed;
-      bottom:16px;
-      left:16px;
-      background:#111827;
-      color:#fff;
-      padding:10px 12px;
-      border-radius:10px;
-      font-size:12px;
-      font-weight:800;
-      opacity:0;
-      transform: translateY(10px);
-      transition: all .2s ease;
-      z-index:3000;
-      max-width: 720px;
-    }
-    .toast.show{
-      opacity:1;
-      transform: translateY(0);
-    }
+/* MODAL */
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:2000;
+  padding:16px;
+}
+.modal{
+  width:min(760px, 100%);
+  background:#fff;
+  border-radius:14px;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+  overflow:hidden;
+  border:1px solid rgba(17,24,39,.12);
+}
+.modal-head{
+  padding:14px 16px;
+  border-bottom:1px solid rgba(17,24,39,.10);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+.modal-head .t{
+  font-weight:950;
+  color:#111827;
+  font-size:14px;
+}
+.modal-body{
+  padding:14px 16px;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px 12px;
+}
+@media (max-width: 860px){
+  .modal-body{ grid-template-columns: 1fr; }
+}
 
-    /* PAINEL DIREITO (FUNCIONÁRIOS) recolhível */
-    .layout.no-right{
-      grid-template-columns: 360px 1fr;
-    }
-    .rightpanel.is-hidden{
-      display:none;
-    }
-  </style>
+.field label{
+  display:block;
+  font-size:12px;
+  font-weight:900;
+  color:#111827;
+  margin-bottom:6px;
+}
+.field input, .field select{
+  width:100%;
+  padding:10px 10px;
+  border-radius:10px;
+  border:1px solid rgba(17,24,39,.12);
+  font-size:13px;
+  box-sizing:border-box;
+  background:#fff;
+}
+
+.modal-foot{
+  padding:12px 16px;
+  border-top:1px solid rgba(17,24,39,.10);
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+}
+.note{
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.35;
+  max-width: 520px;
+}
+
+/* TOAST */
+.toast{
+  position:fixed;
+  bottom:16px;
+  left:16px;
+  background:#111827;
+  color:#fff;
+  padding:10px 12px;
+  border-radius:10px;
+  font-size:12px;
+  font-weight:800;
+  opacity:0;
+  transform: translateY(10px);
+  transition: all .2s ease;
+  z-index:3000;
+  max-width: 720px;
+}
+.toast.show{
+  opacity:1;
+  transform: translateY(0);
+}
+
+/* Responsivo: empilha mapa + painel */
+@media (max-width: 980px){
+  body{ overflow:auto; }
+  .app{
+    position:relative;
+    inset:auto;
+    padding:12px;
+    display:grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 56vh auto;
+    gap:12px;
+  }
+  .map{ height:56vh; }
+  #map{ height:56vh; }
+}
+
+</style>
 </head>
 
 <body>
-  <div id="map"></div>
+<div class="app" id="app">
+<div id="map" class="map"></div>
 
-  <div class="layout" id="layout">
-    <div class="card leftpanel">
-      <div class="panel-head">
-        <div>
-          <div class="title">Seleção</div>
-          <div class="sub" id="selSub">Nenhum município selecionado</div>
-        </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <button class="btn xs" id="btnToggleRight">Funcionários</button>
-          <button class="btn primary" id="btnAdd" disabled>Adicionar funcionário</button>
-        </div>
+<div class="card panel" id="sidePanel">
+  <div class="panel-head">
+    <div>
+      <div class="title">Alocação de Funcionários</div>
+      <div class="sub" id="selSub">Nenhum município selecionado</div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn xs" id="btnZoomSP">Ver SP</button>
+      <button class="btn primary" id="btnAdd" disabled>Adicionar funcionário</button>
+    </div>
+  </div>
+
+  <div class="panel-body">
+    <div class="section">
+      <div class="search">
+        <input class="input" id="searchInput" placeholder="Buscar município..." />
+        <button class="btn" id="btnClearSearch">Limpar</button>
       </div>
 
-      <div class="panel-body">
-        <div class="search">
-          <input class="input" id="searchInput" placeholder="Buscar município..." />
-          <button class="btn" id="btnClearSearch">Limpar</button>
-        </div>
+      <div id="searchResults" class="list"></div>
 
-        <div id="searchResults" class="list"></div>
+      <div style="height:10px"></div>
 
-        <div style="height:10px"></div>
+      <div class="kv">
+        <div>Município</div><div id="selNome">-</div>
+        <div>Código (IBGE)</div><div id="selCodigo">-</div>
+        <div>Região (auto)</div><div id="selRegiao">-</div>
+      </div>
 
-        <div class="kv">
-          <div>Município</div><div id="selNome">-</div>
-          <div>Código (IBGE)</div><div id="selCodigo">-</div>
-          <div>Região (auto)</div><div id="selRegiao">-</div>
-        </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <span class="pill orange" id="pillSelected" style="display:none;">Selecionado</span>
+        <span class="pill green" id="pillHasActive" style="display:none;">Tem ativo</span>
+        <span class="pill red" id="pillOnlyInactive" style="display:none;">Só inativos</span>
+        <span class="pill gray" id="pillNone" style="display:none;">Sem alocação</span>
+      </div>
 
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <span class="pill orange" id="pillSelected" style="display:none;">Selecionado</span>
-          <span class="pill green" id="pillHasActive" style="display:none;">Tem ativo</span>
-          <span class="pill red" id="pillOnlyInactive" style="display:none;">Só inativos</span>
-          <span class="pill gray" id="pillNone" style="display:none;">Sem alocação</span>
-        </div>
+      <div style="height:10px"></div>
 
-        <div style="height:10px"></div>
-
-        <div class="note">
-          Dados de funcionários são salvos automaticamente neste dispositivo.
-        </div>
+      <div class="note">
+        Dados de funcionários são salvos automaticamente neste dispositivo.
       </div>
     </div>
 
-    <div class="mapmask"></div>
+    <div class="divider"></div>
 
-    <div class="card rightpanel">
-      <div class="panel-head">
+    <div class="section">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; margin-bottom:10px;">
         <div>
-          <div class="title">Funcionários por Localidade</div>
+          <div class="title" style="font-size:13px;">Funcionários por Localidade</div>
           <div class="sub" id="countSub">Carregando...</div>
         </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <button class="btn xs" id="btnZoomSP">Ver SP</button>
-          <button class="btn xs" id="btnCloseRight">Fechar</button>
-        </div>
       </div>
 
-      <div class="panel-body">
-        <div id="allocList" class="list"></div>
-      </div>
+      <div id="allocList" class="list"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+<div class="modal">
+<div class="modal-head">
+<div class="t" id="modalTitle">Adicionar funcionário</div>
+<button class="btn" id="btnCloseModal">Fechar</button>
+</div>
+
+  <div class="modal-body">
+    <div class="field">
+      <label>Nome</label>
+      <input id="fName" placeholder="Ex.: Ana Souza" />
+    </div>
+    <div class="field">
+      <label>Cargo</label>
+      <input id="fRole" placeholder="Ex.: Consultor(a) Regional" />
+    </div>
+
+    <div class="field">
+      <label>Status</label>
+      <select id="fStatus">
+        <option value="ACTIVE">ATIVO</option>
+        <option value="INACTIVE">INATIVO</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Tipo de alocação</label>
+      <select id="fType">
+        <option value="MUNICIPIO">Município selecionado</option>
+        <option value="REGIAO">Região (campo do GeoJSON)</option>
+      </select>
+    </div>
+
+    <div class="field" id="regionFieldWrap" style="display:none;">
+      <label>Campo de região</label>
+      <select id="fRegionField"></select>
+    </div>
+
+    <div class="field" id="regionValueWrap" style="display:none;">
+      <label>Valor da região</label>
+      <input id="fRegionValue" placeholder="Ex.: Registro / Campinas / ..." />
+    </div>
+
+    <div class="field">
+      <label>Alocação selecionada</label>
+      <input id="fTarget" disabled />
+    </div>
+
+    <div class="field">
+      <label>ID (opcional)</label>
+      <input id="fId" placeholder="Ex.: EMP012" />
     </div>
   </div>
 
-  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
-    <div class="modal">
-      <div class="modal-head">
-        <div class="t" id="modalTitle">Adicionar funcionário</div>
-        <button class="btn" id="btnCloseModal">Fechar</button>
-      </div>
-
-      <div class="modal-body">
-        <div class="field">
-          <label>Nome</label>
-          <input id="fName" placeholder="Ex.: Ana Souza" />
-        </div>
-        <div class="field">
-          <label>Cargo</label>
-          <input id="fRole" placeholder="Ex.: Consultor(a) Regional" />
-        </div>
-
-        <div class="field">
-          <label>Status</label>
-          <select id="fStatus">
-            <option value="ACTIVE">ATIVO</option>
-            <option value="INACTIVE">INATIVO</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label>Tipo de alocação</label>
-          <select id="fType">
-            <option value="MUNICIPIO">Município selecionado</option>
-            <option value="REGIAO">Região (campo do GeoJSON)</option>
-          </select>
-        </div>
-
-        <div class="field" id="regionFieldWrap" style="display:none;">
-          <label>Campo de região</label>
-          <select id="fRegionField"></select>
-        </div>
-
-        <div class="field" id="regionValueWrap" style="display:none;">
-          <label>Valor da região</label>
-          <input id="fRegionValue" placeholder="Ex.: Registro / Campinas / ..." />
-        </div>
-
-        <div class="field">
-          <label>Alocação selecionada</label>
-          <input id="fTarget" disabled />
-        </div>
-
-        <div class="field">
-          <label>ID (opcional)</label>
-          <input id="fId" placeholder="Ex.: EMP012" />
-        </div>
-      </div>
-
-      <div class="modal-foot">
-        <div class="note" id="modalNote">
-          O cadastro será salvo neste dispositivo.
-        </div>
-        <div style="display:flex; gap:8px;">
-          <button class="btn danger" id="btnDelete" style="display:none;">Excluir</button>
-          <button class="btn primary" id="btnSave">Salvar</button>
-        </div>
-      </div>
+  <div class="modal-foot">
+    <div class="note" id="modalNote">
+      O cadastro será salvo neste dispositivo.
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn danger" id="btnDelete" style="display:none;">Excluir</button>
+      <button class="btn primary" id="btnSave">Salvar</button>
     </div>
   </div>
+</div>
 
-  <div class="toast" id="toast"></div>
+</div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    const SP_URL = './sp.json';
-    const MUNICIPIOS_URL = './sp_municipios_2024.geojson';
-    const EMPREGADOS_URL = './employee_index.json';
+<div class="toast" id="toast"></div>
 
-    const STORAGE_KEY = 'sp_allocations_v1';
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const SP_URL = './sp.json';
+const MUNICIPIOS_URL = './sp_municipios_2024.geojson';
+const EMPREGADOS_URL = './employee_index.json';
 
-    let FIELD_NOME = null;
-    let FIELD_CODIGO = null;
+const STORAGE_KEY = 'sp_allocations_v1';
 
-    const REGION_FIELD_CANDIDATES = ['NM_MICRO','NM_IMEDIAT','NM_REGIAO','REGIAO','MICRO','IMEDIAT','NM_MESO','NM_RGI','NM_RGI_IM'];
+let FIELD_NOME = null;
+let FIELD_CODIGO = null;
 
-    let municipiosGeo = null;
-    let spOutlineLayer = null;
-    let municipiosLayer = null;
+const REGION_FIELD_CANDIDATES = ['NM_MICRO','NM_IMEDIAT','NM_REGIAO','REGIAO','MICRO','IMEDIAT','NM_MESO','NM_RGI','NM_RGI_IM'];
 
-    let selectedCode = null;
-    let selectedFeature = null;
+let municipiosGeo = null;
+let spOutlineLayer = null;
+let municipiosLayer = null;
 
-    let db = { updatedAt: null, employees: [] };
+let selectedCode = null;
+let selectedFeature = null;
 
-    let codeToFeature = new Map();
-    let nameIndex = [];
-    let regionIndex = new Map();
-    let muniStats = new Map();
+let db = { updatedAt: null, employees: [] };
 
-    const $ = (id) => document.getElementById(id);
+let codeToFeature = new Map();
+let nameIndex = [];
+let regionIndex = new Map();
+let muniStats = new Map();
 
-    const layout = $('layout');
+const $ = (id) => document.getElementById(id);
 
-    const btnAdd = $('btnAdd');
-    const searchInput = $('searchInput');
-    const searchResults = $('searchResults');
-    const btnClearSearch = $('btnClearSearch');
+const btnAdd = $('btnAdd');
+const searchInput = $('searchInput');
+const searchResults = $('searchResults');
+const btnClearSearch = $('btnClearSearch');
 
-    const selSub = $('selSub');
-    const selNome = $('selNome');
-    const selCodigo = $('selCodigo');
-    const selRegiao = $('selRegiao');
+const selSub = $('selSub');
+const selNome = $('selNome');
+const selCodigo = $('selCodigo');
+const selRegiao = $('selRegiao');
 
-    const pillSelected = $('pillSelected');
-    const pillHasActive = $('pillHasActive');
-    const pillOnlyInactive = $('pillOnlyInactive');
-    const pillNone = $('pillNone');
+const pillSelected = $('pillSelected');
+const pillHasActive = $('pillHasActive');
+const pillOnlyInactive = $('pillOnlyInactive');
+const pillNone = $('pillNone');
 
-    const allocList = $('allocList');
-    const countSub = $('countSub');
+const allocList = $('allocList');
+const countSub = $('countSub');
 
-    const btnZoomSP = $('btnZoomSP');
+const btnZoomSP = $('btnZoomSP');
 
-    const modalBackdrop = $('modalBackdrop');
-    const btnCloseModal = $('btnCloseModal');
-    const btnSave = $('btnSave');
-    const btnDelete = $('btnDelete');
-    const modalTitle = $('modalTitle');
+const modalBackdrop = $('modalBackdrop');
+const btnCloseModal = $('btnCloseModal');
+const btnSave = $('btnSave');
+const btnDelete = $('btnDelete');
+const modalTitle = $('modalTitle');
 
-    const fName = $('fName');
-    const fRole = $('fRole');
-    const fStatus = $('fStatus');
-    const fType = $('fType');
-    const fRegionField = $('fRegionField');
-    const fRegionValue = $('fRegionValue');
-    const fTarget = $('fTarget');
-    const fId = $('fId');
+const fName = $('fName');
+const fRole = $('fRole');
+const fStatus = $('fStatus');
+const fType = $('fType');
+const fRegionField = $('fRegionField');
+const fRegionValue = $('fRegionValue');
+const fTarget = $('fTarget');
+const fId = $('fId');
 
-    const regionFieldWrap = $('regionFieldWrap');
-    const regionValueWrap = $('regionValueWrap');
+const regionFieldWrap = $('regionFieldWrap');
+const regionValueWrap = $('regionValueWrap');
 
-    const toast = $('toast');
+const toast = $('toast');
 
-    const btnToggleRight = $('btnToggleRight');
-    const btnCloseRight = $('btnCloseRight');
-    const rightPanel = document.querySelector('.rightpanel');
+let editingEmployeeInternalId = null;
 
-    let editingEmployeeInternalId = null;
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._t);
+  toast._t = setTimeout(() => toast.classList.remove('show'), 2200);
+}
 
-    function showToast(msg){
-      toast.textContent = msg;
-      toast.classList.add('show');
-      clearTimeout(showToast._t);
-      toast._t = setTimeout(() => toast.classList.remove('show'), 2200);
+function normalize(str){
+  return String(str || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase().trim();
+}
+
+function nowIso(){
+  return new Date().toISOString();
+}
+
+function safeStr(v){
+  if (v === null || v === undefined) return '';
+  return String(v);
+}
+
+function detectFields(geo){
+  const f = geo.features?.[0];
+  const props = f?.properties || {};
+  const keys = Object.keys(props);
+
+  FIELD_NOME =
+    keys.find(k => /NM.*MUN/i.test(k)) ||
+    keys.find(k => /NOME/i.test(k)) ||
+    'NM_MUN';
+
+  FIELD_CODIGO =
+    keys.find(k => /(CD|COD).*MUN/i.test(k)) ||
+    keys.find(k => /IBGE/i.test(k)) ||
+    'CD_MUN';
+
+  console.log('Campos detectados no GeoJSON:');
+  console.log('  FIELD_NOME  =', FIELD_NOME);
+  console.log('  FIELD_CODIGO=', FIELD_CODIGO);
+
+  return { keys };
+}
+
+function getNome(props){
+  return safeStr(props?.[FIELD_NOME]) || 'Município';
+}
+
+function getCodigo(props){
+  return safeStr(props?.[FIELD_CODIGO]).trim();
+}
+
+function buildIndexes(){
+  codeToFeature = new Map();
+  nameIndex = [];
+  regionIndex = new Map();
+
+  const { keys } = detectFields(municipiosGeo);
+
+  const availableRegionFields = REGION_FIELD_CANDIDATES.filter(c => keys.includes(c));
+  for (const rf of availableRegionFields){
+    regionIndex.set(rf, new Map());
+  }
+
+  for (const ft of municipiosGeo.features || []){
+    const code = getCodigo(ft.properties);
+    const name = getNome(ft.properties);
+    if (!code) continue;
+
+    codeToFeature.set(code, ft);
+    nameIndex.push({ nameKey: normalize(name), name, code });
+
+    for (const rf of availableRegionFields){
+      const val = safeStr(ft.properties?.[rf]).trim();
+      if (!val) continue;
+      const byValue = regionIndex.get(rf);
+      if (!byValue.has(val)) byValue.set(val, new Set());
+      byValue.get(val).add(code);
     }
+  }
 
-    function setRightPanelOpen(open){
-      if (!rightPanel || !layout) return;
-      if (open){
-        rightPanel.classList.remove('is-hidden');
-        layout.classList.remove('no-right');
-        btnToggleRight.textContent = 'Fechar lista';
-      } else {
-        rightPanel.classList.add('is-hidden');
-        layout.classList.add('no-right');
-        btnToggleRight.textContent = 'Funcionários';
-      }
+  fRegionField.innerHTML = '';
+  if (availableRegionFields.length){
+    for (const rf of availableRegionFields){
+      const opt = document.createElement('option');
+      opt.value = rf;
+      opt.textContent = rf;
+      fRegionField.appendChild(opt);
     }
+  } else {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Nenhum campo de região encontrado';
+    fRegionField.appendChild(opt);
+  }
+}
 
-    function toggleRightPanel(){
-      const open = !rightPanel.classList.contains('is-hidden');
-      setRightPanelOpen(!open);
-    }
+function loadDbFromLocalStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.employees)) return false;
+    db = parsed;
+    return true;
+  }catch(e){
+    return false;
+  }
+}
 
-    function normalize(str){
-      return String(str || '')
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .toUpperCase().trim();
-    }
+function saveDbToLocalStorage(){
+  db.updatedAt = nowIso();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+}
 
-    function nowIso(){
-      return new Date().toISOString();
-    }
+async function tryLoadInitialEmployeeIndex(){
+  try{
+    const r = await fetch(EMPREGADOS_URL, { cache:'no-store' });
+    if (!r.ok) return false;
+    const j = await r.json();
+    if (!j || !Array.isArray(j.employees)) return false;
 
-    function safeStr(v){
-      if (v === null || v === undefined) return '';
-      return String(v);
-    }
-
-    function detectFields(geo){
-      const f = geo.features?.[0];
-      const props = f?.properties || {};
-      const keys = Object.keys(props);
-
-      FIELD_NOME =
-        keys.find(k => /NM.*MUN/i.test(k)) ||
-        keys.find(k => /NOME/i.test(k)) ||
-        'NM_MUN';
-
-      FIELD_CODIGO =
-        keys.find(k => /(CD|COD).*MUN/i.test(k)) ||
-        keys.find(k => /IBGE/i.test(k)) ||
-        'CD_MUN';
-
-      console.log('Campos detectados no GeoJSON:');
-      console.log('  FIELD_NOME  =', FIELD_NOME);
-      console.log('  FIELD_CODIGO=', FIELD_CODIGO);
-
-      return { keys };
-    }
-
-    function getNome(props){
-      return safeStr(props?.[FIELD_NOME]) || 'Município';
-    }
-
-    function getCodigo(props){
-      return safeStr(props?.[FIELD_CODIGO]).trim();
-    }
-
-    function buildIndexes(){
-      codeToFeature = new Map();
-      nameIndex = [];
-      regionIndex = new Map();
-
-      const { keys } = detectFields(municipiosGeo);
-
-      const availableRegionFields = REGION_FIELD_CANDIDATES.filter(c => keys.includes(c));
-      for (const rf of availableRegionFields){
-        regionIndex.set(rf, new Map());
-      }
-
-      for (const ft of municipiosGeo.features || []){
-        const code = getCodigo(ft.properties);
-        const name = getNome(ft.properties);
-        if (!code) continue;
-
-        codeToFeature.set(code, ft);
-        nameIndex.push({ nameKey: normalize(name), name, code });
-
-        for (const rf of availableRegionFields){
-          const val = safeStr(ft.properties?.[rf]).trim();
-          if (!val) continue;
-          const byValue = regionIndex.get(rf);
-          if (!byValue.has(val)) byValue.set(val, new Set());
-          byValue.get(val).add(code);
-        }
-      }
-
-      fRegionField.innerHTML = '';
-      if (availableRegionFields.length){
-        for (const rf of availableRegionFields){
-          const opt = document.createElement('option');
-          opt.value = rf;
-          opt.textContent = rf;
-          fRegionField.appendChild(opt);
-        }
-      } else {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'Nenhum campo de região encontrado';
-        fRegionField.appendChild(opt);
-      }
-    }
-
-    function loadDbFromLocalStorage(){
-      try{
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return false;
-        const parsed = JSON.parse(raw);
-        if (!parsed || !Array.isArray(parsed.employees)) return false;
-        db = parsed;
-        return true;
-      }catch(e){
-        return false;
-      }
-    }
-
-    function saveDbToLocalStorage(){
-      db.updatedAt = nowIso();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-    }
-
-    async function tryLoadInitialEmployeeIndex(){
-      try{
-        const r = await fetch(EMPREGADOS_URL, { cache:'no-store' });
-        if (!r.ok) return false;
-        const j = await r.json();
-        if (!j || !Array.isArray(j.employees)) return false;
-
-        if (!db.employees.length){
-          db = {
-            updatedAt: j.updatedAt || nowIso(),
-            employees: j.employees.map(x => ({
-              id: x.employeeId || x.id || '',
-              name: x.employeeName || x.name || '',
-              role: x.role || x.cargo || '',
-              status: (x.status || 'ACTIVE').toUpperCase(),
-              assignment: x.assignment || (
-                x.municipalityCode ? { type:'MUNICIPIO', code: String(x.municipalityCode) } :
-                (x.regionField && x.regionValue ? { type:'REGIAO', field: x.regionField, value: x.regionValue } : null)
-              )
-            })).filter(e => e.assignment && e.name)
-          };
-          saveDbToLocalStorage();
-          showToast('Dados iniciais carregados de employee_index.json');
-        }
-        return true;
-      }catch(e){
-        return false;
-      }
-    }
-
-    function expandAssignmentToCodes(assignment){
-      if (!assignment) return [];
-      if (assignment.type === 'MUNICIPIO'){
-        const code = String(assignment.code || '').trim();
-        return code ? [code] : [];
-      }
-      if (assignment.type === 'REGIAO'){
-        const field = assignment.field;
-        const value = assignment.value;
-        const byField = regionIndex.get(field);
-        if (!byField) return [];
-        const set = byField.get(value);
-        return set ? Array.from(set) : [];
-      }
-      return [];
-    }
-
-    function rebuildStats(){
-      muniStats = new Map();
-
-      function ensure(code){
-        if (!muniStats.has(code)){
-          muniStats.set(code, { activeCount:0, totalCount:0, employees:[] });
-        }
-        return muniStats.get(code);
-      }
-
-      for (const emp of db.employees){
-        const st = (emp.status || 'ACTIVE').toUpperCase();
-        const codes = expandAssignmentToCodes(emp.assignment);
-        for (const code of codes){
-          const entry = ensure(code);
-          entry.totalCount += 1;
-          if (st === 'ACTIVE') entry.activeCount += 1;
-          entry.employees.push(emp);
-        }
-      }
-    }
-
-    function getMunicipioRegionSummary(props){
-      for (const rf of REGION_FIELD_CANDIDATES){
-        const v = props?.[rf];
-        if (v) return `${rf}: ${v}`;
-      }
-      return '-';
-    }
-
-    function fillColorForCode(code){
-      const entry = muniStats.get(code);
-      if (!entry) return getComputedStyle(document.documentElement).getPropertyValue('--c-none').trim();
-      if (entry.activeCount > 0) return getComputedStyle(document.documentElement).getPropertyValue('--c-active').trim();
-      return getComputedStyle(document.documentElement).getPropertyValue('--c-inactive').trim();
-    }
-
-    function styleMunicipio(feature){
-      const code = getCodigo(feature.properties);
-      const baseFill = fillColorForCode(code);
-      const isSelected = selectedCode && code === selectedCode;
-
-      return {
-        color: isSelected ? getComputedStyle(document.documentElement).getPropertyValue('--c-selected').trim() : '#ffffff',
-        weight: isSelected ? 3 : 0.8,
-        opacity: 1,
-        fillColor: baseFill,
-        fillOpacity: isSelected ? 0.28 : 0.72
+    if (!db.employees.length){
+      db = {
+        updatedAt: j.updatedAt || nowIso(),
+        employees: j.employees.map(x => ({
+          id: x.employeeId || x.id || '',
+          name: x.employeeName || x.name || '',
+          role: x.role || x.cargo || '',
+          status: (x.status || 'ACTIVE').toUpperCase(),
+          assignment: x.assignment || (
+            x.municipalityCode ? { type:'MUNICIPIO', code: String(x.municipalityCode) } :
+            (x.regionField && x.regionValue ? { type:'REGIAO', field: x.regionField, value: x.regionValue } : null)
+          )
+        })).filter(e => e.assignment && e.name)
       };
+      saveDbToLocalStorage();
+      showToast('Dados iniciais carregados de employee_index.json');
     }
+    return true;
+  }catch(e){
+    return false;
+  }
+}
 
-    function highlightFeature(e){
-      const layer = e.target;
-      layer.setStyle({ weight: 2.2, color:'#111827', fillOpacity: 0.82 });
-      layer.bringToFront();
+function expandAssignmentToCodes(assignment){
+  if (!assignment) return [];
+  if (assignment.type === 'MUNICIPIO'){
+    const code = String(assignment.code || '').trim();
+    return code ? [code] : [];
+  }
+  if (assignment.type === 'REGIAO'){
+    const field = assignment.field;
+    const value = assignment.value;
+    const byField = regionIndex.get(field);
+    if (!byField) return [];
+    const set = byField.get(value);
+    return set ? Array.from(set) : [];
+  }
+  return [];
+}
+
+function rebuildStats(){
+  muniStats = new Map();
+
+  function ensure(code){
+    if (!muniStats.has(code)){
+      muniStats.set(code, { activeCount:0, totalCount:0, employees:[] });
     }
+    return muniStats.get(code);
+  }
 
-    function resetHighlight(e){
-      if (municipiosLayer) municipiosLayer.resetStyle(e.target);
+  for (const emp of db.employees){
+    const st = (emp.status || 'ACTIVE').toUpperCase();
+    const codes = expandAssignmentToCodes(emp.assignment);
+    for (const code of codes){
+      const entry = ensure(code);
+      entry.totalCount += 1;
+      if (st === 'ACTIVE') entry.activeCount += 1;
+      entry.employees.push(emp);
     }
+  }
+}
 
-    function selectMunicipioByFeature(feature, layer){
-      selectedFeature = feature;
-      selectedCode = getCodigo(feature.properties);
+function getMunicipioRegionSummary(props){
+  for (const rf of REGION_FIELD_CANDIDATES){
+    const v = props?.[rf];
+    if (v) return `${rf}: ${v}`;
+  }
+  return '-';
+}
 
-      btnAdd.disabled = !selectedCode;
+function fillColorForCode(code){
+  const entry = muniStats.get(code);
+  if (!entry) return getComputedStyle(document.documentElement).getPropertyValue('--c-none').trim();
+  if (entry.activeCount > 0) return getComputedStyle(document.documentElement).getPropertyValue('--c-active').trim();
+  return getComputedStyle(document.documentElement).getPropertyValue('--c-inactive').trim();
+}
 
-      const name = getNome(feature.properties);
-      selSub.textContent = `Selecionado: ${name}`;
-      selNome.textContent = name;
-      selCodigo.textContent = selectedCode || '-';
-      selRegiao.textContent = getMunicipioRegionSummary(feature.properties);
+function styleMunicipio(feature){
+  const code = getCodigo(feature.properties);
+  const baseFill = fillColorForCode(code);
+  const isSelected = selectedCode && code === selectedCode;
 
-      pillSelected.style.display = selectedCode ? 'inline-flex' : 'none';
+  return {
+    color: isSelected ? getComputedStyle(document.documentElement).getPropertyValue('--c-selected').trim() : '#ffffff',
+    weight: isSelected ? 3 : 0.8,
+    opacity: 1,
+    fillColor: baseFill,
+    fillOpacity: isSelected ? 0.28 : 0.72
+  };
+}
 
-      const entry = muniStats.get(selectedCode);
-      pillHasActive.style.display = (entry && entry.activeCount > 0) ? 'inline-flex' : 'none';
-      pillOnlyInactive.style.display = (entry && entry.totalCount > 0 && entry.activeCount === 0) ? 'inline-flex' : 'none';
-      pillNone.style.display = (!entry) ? 'inline-flex' : 'none';
+function highlightFeature(e){
+  const layer = e.target;
+  layer.setStyle({ weight: 2.2, color:'#111827', fillOpacity: 0.82 });
+  layer.bringToFront();
+}
 
-      if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
+function resetHighlight(e){
+  if (municipiosLayer) municipiosLayer.resetStyle(e.target);
+}
 
-      if (layer){
-        const bounds = layer.getBounds();
-        map.fitBounds(bounds, { padding:[40,40], maxZoom: 11, animate:true, duration:0.6 });
-      }
+function selectMunicipioByFeature(feature, layer){
+  selectedFeature = feature;
+  selectedCode = getCodigo(feature.properties);
 
-      renderAllocationsPanel();
+  btnAdd.disabled = !selectedCode;
+
+  const name = getNome(feature.properties);
+  selSub.textContent = `Selecionado: ${name}`;
+  selNome.textContent = name;
+  selCodigo.textContent = selectedCode || '-';
+  selRegiao.textContent = getMunicipioRegionSummary(feature.properties);
+
+  pillSelected.style.display = selectedCode ? 'inline-flex' : 'none';
+
+  const entry = muniStats.get(selectedCode);
+  pillHasActive.style.display = (entry && entry.activeCount > 0) ? 'inline-flex' : 'none';
+  pillOnlyInactive.style.display = (entry && entry.totalCount > 0 && entry.activeCount === 0) ? 'inline-flex' : 'none';
+  pillNone.style.display = (!entry) ? 'inline-flex' : 'none';
+
+  if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
+
+  if (layer){
+    const bounds = layer.getBounds();
+    map.fitBounds(bounds, { padding:[40,40], maxZoom: 11, animate:true, duration:0.6 });
+  }
+
+  renderAllocationsPanel();
+}
+
+function onMunicipioClick(e){
+  const layer = e.target;
+  const feature = layer.feature;
+  selectMunicipioByFeature(feature, layer);
+}
+
+function renderSearchResults(items){
+  searchResults.innerHTML = '';
+
+  if (!items.length){
+    const div = document.createElement('div');
+    div.className = 'muted';
+    div.style.fontSize = '12px';
+    div.textContent = 'Sem resultados.';
+    searchResults.appendChild(div);
+    return;
+  }
+
+  for (const it of items.slice(0, 25)){
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `
+      <div class="row">
+        <div>
+          <div class="name">${it.name}</div>
+          <div class="meta">Código: ${it.code}</div>
+        </div>
+        <div class="actions">
+          <span class="link">Ver</span>
+        </div>
+      </div>
+    `;
+    div.querySelector('.link').onclick = () => {
+      const ft = codeToFeature.get(it.code);
+      if (!ft) return;
+
+      let foundLayer = null;
+      municipiosLayer.eachLayer(l => {
+        if (getCodigo(l.feature.properties) === it.code) foundLayer = l;
+      });
+      selectMunicipioByFeature(ft, foundLayer);
+    };
+    searchResults.appendChild(div);
+  }
+}
+
+function groupEmployeesByLocality(){
+  const groups = new Map();
+
+  for (const emp of db.employees){
+    const a = emp.assignment;
+    if (!a) continue;
+
+    let key = '';
+    let title = '';
+    let subtitle = '';
+
+    if (a.type === 'MUNICIPIO'){
+      const code = String(a.code || '').trim();
+      const ft = codeToFeature.get(code);
+      const name = ft ? getNome(ft.properties) : '(município)';
+      key = `MUNI:${code}`;
+      title = name;
+      subtitle = `Município | Código ${code}`;
+    } else if (a.type === 'REGIAO'){
+      key = `REG:${a.field}:${a.value}`;
+      title = a.value;
+      subtitle = `Região | Campo ${a.field}`;
+    } else continue;
+
+    if (!groups.has(key)){
+      groups.set(key, { key, title, subtitle, employees: [] });
     }
+    groups.get(key).employees.push(emp);
+  }
 
-    function onMunicipioClick(e){
-      const layer = e.target;
-      const feature = layer.feature;
-      selectMunicipioByFeature(feature, layer);
-    }
+  return Array.from(groups.values()).sort((a,b) => a.title.localeCompare(b.title, 'pt-BR'));
+}
 
-    function renderSearchResults(items){
-      searchResults.innerHTML = '';
+function renderAllocationsPanel(){
+  const totalEmployees = db.employees.length;
+  countSub.textContent = `${totalEmployees} funcionário(s) • Atualizado: ${db.updatedAt ? new Date(db.updatedAt).toLocaleString() : '-'}`;
 
-      if (!items.length){
-        const div = document.createElement('div');
-        div.className = 'muted';
-        div.style.fontSize = '12px';
-        div.textContent = 'Sem resultados.';
-        searchResults.appendChild(div);
+  const groups = groupEmployeesByLocality();
+
+  allocList.innerHTML = '';
+  if (!groups.length){
+    allocList.innerHTML = `<div class="muted" style="font-size:12px;">Nenhuma alocação cadastrada. Selecione um município e clique em "Adicionar funcionário".</div>`;
+    return;
+  }
+
+  for (const g of groups){
+    const wrap = document.createElement('div');
+    wrap.className = 'item';
+
+    const sorted = g.employees.slice().sort((a,b) => a.name.localeCompare(b.name,'pt-BR'));
+
+    const employeeLines = sorted.map((e, idx) => {
+      const pill = e.status === 'ACTIVE' ? '<span class="pill green">ATIVO</span>' : '<span class="pill red">INATIVO</span>';
+      const role = e.role ? e.role : '';
+      const id = e.id ? ` (${e.id})` : '';
+      return `
+        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; padding:8px 0; border-top:${idx===0?'none':'1px solid rgba(17,24,39,.08)'};">
+          <div>
+            <div style="font-weight:950; color:#111827; font-size:13px;">${e.name}${id}</div>
+            <div class="meta">${role ? role : '<span class="muted">Cargo não informado</span>'}</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            ${pill}
+            <span class="link" data-edit="${g.key}::${idx}">Editar</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    wrap.innerHTML = `
+      <div class="row">
+        <div>
+          <div class="name">${g.title}</div>
+          <div class="meta">${g.subtitle} • ${g.employees.length} funcionário(s)</div>
+        </div>
+        <div class="actions">
+          <span class="link" data-focus="${g.key}">Focar</span>
+        </div>
+      </div>
+      <div style="margin-top:6px;">
+        ${employeeLines}
+      </div>
+    `;
+
+    wrap.querySelector('[data-focus]').onclick = () => {
+      const key = g.key;
+      if (key.startsWith('MUNI:')){
+        const code = key.split(':')[1];
+        const ft = codeToFeature.get(code);
+        if (!ft) return;
+        let foundLayer = null;
+        municipiosLayer.eachLayer(l => {
+          if (getCodigo(l.feature.properties) === code) foundLayer = l;
+        });
+        selectMunicipioByFeature(ft, foundLayer);
         return;
       }
 
-      for (const it of items.slice(0, 25)){
-        const div = document.createElement('div');
-        div.className = 'item';
-        div.innerHTML = `
-          <div class="row">
-            <div>
-              <div class="name">${it.name}</div>
-              <div class="meta">Código: ${it.code}</div>
-            </div>
-            <div class="actions">
-              <span class="link">Ver</span>
-            </div>
-          </div>
-        `;
-        div.querySelector('.link').onclick = () => {
-          const ft = codeToFeature.get(it.code);
-          if (!ft) return;
+      if (key.startsWith('REG:')){
+        const parts = key.split(':');
+        const field = parts[1];
+        const value = parts.slice(2).join(':');
+        const codes = expandAssignmentToCodes({ type:'REGIAO', field, value });
+        if (!codes.length) return;
 
-          let foundLayer = null;
-          municipiosLayer.eachLayer(l => {
-            if (getCodigo(l.feature.properties) === it.code) foundLayer = l;
-          });
-          selectMunicipioByFeature(ft, foundLayer);
-        };
-        searchResults.appendChild(div);
-      }
-    }
-
-    function groupEmployeesByLocality(){
-      const groups = new Map();
-
-      for (const emp of db.employees){
-        const a = emp.assignment;
-        if (!a) continue;
-
-        let key = '';
-        let title = '';
-        let subtitle = '';
-
-        if (a.type === 'MUNICIPIO'){
-          const code = String(a.code || '').trim();
-          const ft = codeToFeature.get(code);
-          const name = ft ? getNome(ft.properties) : '(município)';
-          key = `MUNI:${code}`;
-          title = name;
-          subtitle = `Município | Código ${code}`;
-        } else if (a.type === 'REGIAO'){
-          key = `REG:${a.field}:${a.value}`;
-          title = a.value;
-          subtitle = `Região | Campo ${a.field}`;
-        } else continue;
-
-        if (!groups.has(key)){
-          groups.set(key, { key, title, subtitle, employees: [] });
-        }
-        groups.get(key).employees.push(emp);
-      }
-
-      return Array.from(groups.values()).sort((a,b) => a.title.localeCompare(b.title, 'pt-BR'));
-    }
-
-    function renderAllocationsPanel(){
-      const totalEmployees = db.employees.length;
-      countSub.textContent = `${totalEmployees} funcionário(s) • Atualizado: ${db.updatedAt ? new Date(db.updatedAt).toLocaleString() : '-'}`;
-
-      const groups = groupEmployeesByLocality();
-
-      allocList.innerHTML = '';
-      if (!groups.length){
-        allocList.innerHTML = `<div class="muted" style="font-size:12px;">Nenhuma alocação cadastrada. Selecione um município e clique em "Adicionar funcionário".</div>`;
-        return;
-      }
-
-      for (const g of groups){
-        const wrap = document.createElement('div');
-        wrap.className = 'item';
-
-        const sorted = g.employees.slice().sort((a,b) => a.name.localeCompare(b.name,'pt-BR'));
-
-        const employeeLines = sorted.map((e, idx) => {
-          const pill = e.status === 'ACTIVE' ? '<span class="pill green">ATIVO</span>' : '<span class="pill red">INATIVO</span>';
-          const role = e.role ? e.role : '';
-          const id = e.id ? ` (${e.id})` : '';
-          return `
-            <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; padding:8px 0; border-top:${idx===0?'none':'1px solid rgba(17,24,39,.08)'};">
-              <div>
-                <div style="font-weight:950; color:#111827; font-size:13px;">${e.name}${id}</div>
-                <div class="meta">${role ? role : '<span class="muted">Cargo não informado</span>'}</div>
-              </div>
-              <div style="display:flex; gap:8px; align-items:center;">
-                ${pill}
-                <span class="link" data-edit="${g.key}::${idx}">Editar</span>
-              </div>
-            </div>
-          `;
-        }).join('');
-
-        wrap.innerHTML = `
-          <div class="row">
-            <div>
-              <div class="name">${g.title}</div>
-              <div class="meta">${g.subtitle} • ${g.employees.length} funcionário(s)</div>
-            </div>
-            <div class="actions">
-              <span class="link" data-focus="${g.key}">Focar</span>
-            </div>
-          </div>
-          <div style="margin-top:6px;">
-            ${employeeLines}
-          </div>
-        `;
-
-        wrap.querySelector('[data-focus]').onclick = () => {
-          const key = g.key;
-          if (key.startsWith('MUNI:')){
-            const code = key.split(':')[1];
-            const ft = codeToFeature.get(code);
-            if (!ft) return;
-            let foundLayer = null;
-            municipiosLayer.eachLayer(l => {
-              if (getCodigo(l.feature.properties) === code) foundLayer = l;
-            });
-            selectMunicipioByFeature(ft, foundLayer);
-            return;
-          }
-
-          if (key.startsWith('REG:')){
-            const parts = key.split(':');
-            const field = parts[1];
-            const value = parts.slice(2).join(':');
-            const codes = expandAssignmentToCodes({ type:'REGIAO', field, value });
-            if (!codes.length) return;
-
-            const layers = [];
-            municipiosLayer.eachLayer(l => {
-              const c = getCodigo(l.feature.properties);
-              if (codes.includes(c)) layers.push(l);
-            });
-
-            if (layers.length){
-              const groupLayer = L.featureGroup(layers);
-              map.fitBounds(groupLayer.getBounds(), { padding:[40,40], maxZoom: 10, animate:true, duration:0.6 });
-              showToast(`Foco na região: ${value}`);
-            } else {
-              showToast('Não foi possível focar: sem camadas encontradas.');
-            }
-          }
-        };
-
-        const editLinks = wrap.querySelectorAll('[data-edit]');
-        editLinks.forEach((lnk) => {
-          lnk.onclick = () => {
-            const token = lnk.getAttribute('data-edit');
-            const [gkey, idxStr] = token.split('::');
-            const idx = Number(idxStr);
-
-            const groupsNow = groupEmployeesByLocality();
-            const group = groupsNow.find(x => x.key === gkey);
-            if (!group) return;
-
-            const emp = group.employees.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'))[idx];
-            if (!emp) return;
-
-            const globalIndex = db.employees.indexOf(emp);
-            if (globalIndex < 0) return;
-
-            openModalForEdit(globalIndex);
-          };
+        const layers = [];
+        municipiosLayer.eachLayer(l => {
+          const c = getCodigo(l.feature.properties);
+          if (codes.includes(c)) layers.push(l);
         });
 
-        allocList.appendChild(wrap);
-      }
-    }
-
-    function showModal(open){
-      modalBackdrop.style.display = open ? 'flex' : 'none';
-    }
-
-    function syncTypeFields(){
-      const type = fType.value;
-
-      if (type === 'REGIAO'){
-        regionFieldWrap.style.display = '';
-        regionValueWrap.style.display = '';
-
-        const field = fRegionField.value;
-        const v = selectedFeature?.properties?.[field];
-        if (v && !fRegionValue.value){
-          fRegionValue.value = String(v);
+        if (layers.length){
+          const groupLayer = L.featureGroup(layers);
+          map.fitBounds(groupLayer.getBounds(), { padding:[40,40], maxZoom: 10, animate:true, duration:0.6 });
+          showToast(`Foco na região: ${value}`);
+        } else {
+          showToast('Não foi possível focar: sem camadas encontradas.');
         }
-        const showField = fRegionField.value || '(campo)';
-        const showValue = fRegionValue.value || '(valor)';
-        fTarget.value = `Região: ${showValue} (${showField})`;
-      } else {
-        regionFieldWrap.style.display = 'none';
-        regionValueWrap.style.display = 'none';
-
-        const nome = selectedFeature ? getNome(selectedFeature.properties) : '-';
-        const code = selectedCode || '-';
-        fTarget.value = `${nome} (${code})`;
-      }
-    }
-
-    function openModalForAdd(){
-      if (!selectedFeature || !selectedCode) return;
-
-      editingEmployeeInternalId = null;
-      modalTitle.textContent = 'Adicionar funcionário';
-      btnDelete.style.display = 'none';
-
-      fName.value = '';
-      fRole.value = '';
-      fStatus.value = 'ACTIVE';
-      fType.value = 'MUNICIPIO';
-      fId.value = '';
-
-      const nome = getNome(selectedFeature.properties);
-      fTarget.value = `${nome} (${selectedCode})`;
-
-      fRegionValue.value = '';
-      syncTypeFields();
-
-      // ao adicionar, já abrir painel de funcionários
-      setRightPanelOpen(true);
-
-      showModal(true);
-    }
-
-    function openModalForEdit(idx){
-      const emp = db.employees[idx];
-      if (!emp) return;
-
-      editingEmployeeInternalId = idx;
-      modalTitle.textContent = 'Editar funcionário';
-      btnDelete.style.display = 'inline-block';
-
-      fName.value = emp.name || '';
-      fRole.value = emp.role || '';
-      fStatus.value = (emp.status || 'ACTIVE').toUpperCase();
-      fId.value = emp.id || '';
-
-      const a = emp.assignment;
-      if (a?.type === 'REGIAO'){
-        fType.value = 'REGIAO';
-        syncTypeFields();
-        fRegionField.value = a.field || fRegionField.value;
-        fRegionValue.value = a.value || '';
-        fTarget.value = `Região: ${a.value} (${a.field})`;
-      } else {
-        fType.value = 'MUNICIPIO';
-        syncTypeFields();
-        const code = String(a?.code || '').trim();
-        const ft = codeToFeature.get(code);
-        const nome = ft ? getNome(ft.properties) : '(município)';
-        fTarget.value = `${nome} (${code || '-'})`;
-      }
-
-      setRightPanelOpen(true);
-      showModal(true);
-    }
-
-    function collectAssignmentFromForm(){
-      const type = fType.value;
-
-      if (type === 'REGIAO'){
-        const field = fRegionField.value;
-        const value = String(fRegionValue.value || '').trim();
-        if (!field || field.includes('Nenhum campo')) return null;
-        if (!value) return null;
-        return { type:'REGIAO', field, value };
-      }
-
-      if (!selectedCode) return null;
-      return { type:'MUNICIPIO', code: String(selectedCode).trim() };
-    }
-
-    function saveEmployee(){
-      const name = String(fName.value || '').trim();
-      const role = String(fRole.value || '').trim();
-      const status = String(fStatus.value || 'ACTIVE').toUpperCase();
-      const id = String(fId.value || '').trim();
-
-      if (!name){
-        showToast('Informe o nome do funcionário.');
-        return;
-      }
-
-      const assignment = collectAssignmentFromForm();
-      if (!assignment){
-        showToast('Defina a alocação (município ou região).');
-        return;
-      }
-
-      const emp = { id, name, role, status, assignment };
-
-      if (editingEmployeeInternalId === null){
-        db.employees.push(emp);
-      } else {
-        db.employees[editingEmployeeInternalId] = emp;
-      }
-
-      saveDbToLocalStorage();
-      rebuildStats();
-      if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
-      renderAllocationsPanel();
-      showModal(false);
-      setRightPanelOpen(true);
-      showToast(editingEmployeeInternalId === null ? 'Funcionário adicionado.' : 'Funcionário atualizado.');
-      editingEmployeeInternalId = null;
-    }
-
-    function deleteEmployee(){
-      if (editingEmployeeInternalId === null) return;
-      const emp = db.employees[editingEmployeeInternalId];
-      if (!emp) return;
-
-      const ok = confirm(`Excluir o funcionário "${emp.name}"?`);
-      if (!ok) return;
-
-      db.employees.splice(editingEmployeeInternalId, 1);
-      editingEmployeeInternalId = null;
-
-      saveDbToLocalStorage();
-      rebuildStats();
-      if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
-      renderAllocationsPanel();
-      showModal(false);
-      showToast('Funcionário excluído.');
-    }
-
-    const map = L.map('map').setView([-22.7, -48.8], 7);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
-
-    async function init(){
-      const spRes = await fetch(SP_URL, { cache:'no-store' });
-      if (!spRes.ok) throw new Error('Falha ao carregar sp.json: ' + spRes.status);
-      const sp = await spRes.json();
-
-      const munRes = await fetch(MUNICIPIOS_URL, { cache:'no-store' });
-      if (!munRes.ok) throw new Error('Falha ao carregar sp_municipios_2024.geojson: ' + munRes.status);
-      municipiosGeo = await munRes.json();
-
-      const spFeature = (sp.type === 'FeatureCollection') ? sp.features[0] : sp;
-      spOutlineLayer = L.geoJSON(spFeature, {
-        style: { color:'#111827', weight:2.6, opacity:1, fill:false }
-      }).addTo(map);
-
-      if (municipiosGeo.type !== 'FeatureCollection'){
-        throw new Error('GeoJSON de municípios inválido: esperado FeatureCollection, veio ' + municipiosGeo.type);
-      }
-
-      buildIndexes();
-
-      loadDbFromLocalStorage();
-      await tryLoadInitialEmployeeIndex();
-
-      rebuildStats();
-
-      municipiosLayer = L.geoJSON(municipiosGeo, {
-        style: styleMunicipio,
-        onEachFeature: (feature, layer) => {
-          layer.on({
-            mouseover: highlightFeature,
-            mouseout: resetHighlight,
-            click: onMunicipioClick
-          });
-        }
-      }).addTo(map);
-
-      map.fitBounds(municipiosLayer.getBounds(), { padding:[30,30] });
-      renderAllocationsPanel();
-      showToast('Mapa pronto.');
-
-      setRightPanelOpen(false);
-    }
-
-    btnAdd.onclick = openModalForAdd;
-    btnCloseModal.onclick = () => showModal(false);
-    modalBackdrop.onclick = (e) => { if (e.target === modalBackdrop) showModal(false); };
-    btnSave.onclick = saveEmployee;
-    btnDelete.onclick = deleteEmployee;
-
-    fType.onchange = () => { fRegionValue.value = ''; syncTypeFields(); };
-    fRegionField.onchange = () => { fRegionValue.value = ''; syncTypeFields(); };
-    fRegionValue.oninput = () => syncTypeFields();
-
-    btnClearSearch.onclick = () => {
-      searchInput.value = '';
-      searchResults.innerHTML = '';
-    };
-
-    searchInput.oninput = () => {
-      const term = normalize(searchInput.value);
-      if (term.length < 2){
-        searchResults.innerHTML = '';
-        return;
-      }
-      const matches = nameIndex.filter(x => x.nameKey.includes(term)).slice(0, 40);
-      renderSearchResults(matches);
-    };
-
-    btnZoomSP.onclick = () => {
-      if (municipiosLayer){
-        map.fitBounds(municipiosLayer.getBounds(), { padding:[30,30] });
       }
     };
-    btnToggleRight.onclick = () => setRightPanelOpen(true);
-    btnCloseRight.onclick = () => setRightPanelOpen(false);
 
-    init().catch(err => {
-      console.error(err);
-      alert('Erro ao iniciar: ' + err.message);
+    const editLinks = wrap.querySelectorAll('[data-edit]');
+    editLinks.forEach((lnk) => {
+      lnk.onclick = () => {
+        const token = lnk.getAttribute('data-edit');
+        const [gkey, idxStr] = token.split('::');
+        const idx = Number(idxStr);
+
+        const groupsNow = groupEmployeesByLocality();
+        const group = groupsNow.find(x => x.key === gkey);
+        if (!group) return;
+
+        const emp = group.employees.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'))[idx];
+        if (!emp) return;
+
+        const globalIndex = db.employees.indexOf(emp);
+        if (globalIndex < 0) return;
+
+        openModalForEdit(globalIndex);
+      };
     });
-  </script>
+
+    allocList.appendChild(wrap);
+  }
+}
+
+function showModal(open){
+  modalBackdrop.style.display = open ? 'flex' : 'none';
+}
+
+function syncTypeFields(){
+  const type = fType.value;
+
+  if (type === 'REGIAO'){
+    regionFieldWrap.style.display = '';
+    regionValueWrap.style.display = '';
+
+    const field = fRegionField.value;
+    const v = selectedFeature?.properties?.[field];
+    if (v && !fRegionValue.value){
+      fRegionValue.value = String(v);
+    }
+    const showField = fRegionField.value || '(campo)';
+    const showValue = fRegionValue.value || '(valor)';
+    fTarget.value = `Região: ${showValue} (${showField})`;
+  } else {
+    regionFieldWrap.style.display = 'none';
+    regionValueWrap.style.display = 'none';
+
+    const nome = selectedFeature ? getNome(selectedFeature.properties) : '-';
+    const code = selectedCode || '-';
+    fTarget.value = `${nome} (${code})`;
+  }
+}
+
+function openModalForAdd(){
+  if (!selectedFeature || !selectedCode) return;
+
+  editingEmployeeInternalId = null;
+  modalTitle.textContent = 'Adicionar funcionário';
+  btnDelete.style.display = 'none';
+
+  fName.value = '';
+  fRole.value = '';
+  fStatus.value = 'ACTIVE';
+  fType.value = 'MUNICIPIO';
+  fId.value = '';
+
+  const nome = getNome(selectedFeature.properties);
+  fTarget.value = `${nome} (${selectedCode})`;
+
+  fRegionValue.value = '';
+  syncTypeFields();
+
+  showModal(true);
+}
+
+function openModalForEdit(idx){
+  const emp = db.employees[idx];
+  if (!emp) return;
+
+  editingEmployeeInternalId = idx;
+  modalTitle.textContent = 'Editar funcionário';
+  btnDelete.style.display = 'inline-block';
+
+  fName.value = emp.name || '';
+  fRole.value = emp.role || '';
+  fStatus.value = (emp.status || 'ACTIVE').toUpperCase();
+  fId.value = emp.id || '';
+
+  const a = emp.assignment;
+  if (a?.type === 'REGIAO'){
+    fType.value = 'REGIAO';
+    syncTypeFields();
+    fRegionField.value = a.field || fRegionField.value;
+    fRegionValue.value = a.value || '';
+    fTarget.value = `Região: ${a.value} (${a.field})`;
+  } else {
+    fType.value = 'MUNICIPIO';
+    syncTypeFields();
+    const code = String(a?.code || '').trim();
+    const ft = codeToFeature.get(code);
+    const nome = ft ? getNome(ft.properties) : '(município)';
+    fTarget.value = `${nome} (${code || '-'})`;
+  }
+
+  showModal(true);
+}
+
+function collectAssignmentFromForm(){
+  const type = fType.value;
+
+  if (type === 'REGIAO'){
+    const field = fRegionField.value;
+    const value = String(fRegionValue.value || '').trim();
+    if (!field || field.includes('Nenhum campo')) return null;
+    if (!value) return null;
+    return { type:'REGIAO', field, value };
+  }
+
+  if (!selectedCode) return null;
+  return { type:'MUNICIPIO', code: String(selectedCode).trim() };
+}
+
+function saveEmployee(){
+  const name = String(fName.value || '').trim();
+  const role = String(fRole.value || '').trim();
+  const status = String(fStatus.value || 'ACTIVE').toUpperCase();
+  const id = String(fId.value || '').trim();
+
+  if (!name){
+    showToast('Informe o nome do funcionário.');
+    return;
+  }
+
+  const assignment = collectAssignmentFromForm();
+  if (!assignment){
+    showToast('Defina a alocação (município ou região).');
+    return;
+  }
+
+  const emp = { id, name, role, status, assignment };
+
+  if (editingEmployeeInternalId === null){
+    db.employees.push(emp);
+  } else {
+    db.employees[editingEmployeeInternalId] = emp;
+  }
+
+  saveDbToLocalStorage();
+  rebuildStats();
+  if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
+  renderAllocationsPanel();
+  showModal(false);
+  showToast(editingEmployeeInternalId === null ? 'Funcionário adicionado.' : 'Funcionário atualizado.');
+  editingEmployeeInternalId = null;
+}
+
+function deleteEmployee(){
+  if (editingEmployeeInternalId === null) return;
+  const emp = db.employees[editingEmployeeInternalId];
+  if (!emp) return;
+
+  const ok = confirm(`Excluir o funcionário "${emp.name}"?`);
+  if (!ok) return;
+
+  db.employees.splice(editingEmployeeInternalId, 1);
+  editingEmployeeInternalId = null;
+
+  saveDbToLocalStorage();
+  rebuildStats();
+  if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
+  renderAllocationsPanel();
+  showModal(false);
+  showToast('Funcionário excluído.');
+}
+
+const map = L.map('map').setView([-22.7, -48.8], 7);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '© OpenStreetMap'
+}).addTo(map);
+
+window.addEventListener('resize', () => {
+  try{ map.invalidateSize(); }catch(e){}
+});
+
+async function init(){
+  const spRes = await fetch(SP_URL, { cache:'no-store' });
+  if (!spRes.ok) throw new Error('Falha ao carregar sp.json: ' + spRes.status);
+  const sp = await spRes.json();
+
+  const munRes = await fetch(MUNICIPIOS_URL, { cache:'no-store' });
+  if (!munRes.ok) throw new Error('Falha ao carregar sp_municipios_2024.geojson: ' + munRes.status);
+  municipiosGeo = await munRes.json();
+
+  const spFeature = (sp.type === 'FeatureCollection') ? sp.features[0] : sp;
+  spOutlineLayer = L.geoJSON(spFeature, {
+    style: { color:'#111827', weight:2.6, opacity:1, fill:false }
+  }).addTo(map);
+
+  if (municipiosGeo.type !== 'FeatureCollection'){
+    throw new Error('GeoJSON de municípios inválido: esperado FeatureCollection, veio ' + municipiosGeo.type);
+  }
+
+  buildIndexes();
+
+  loadDbFromLocalStorage();
+  await tryLoadInitialEmployeeIndex();
+
+  rebuildStats();
+
+  municipiosLayer = L.geoJSON(municipiosGeo, {
+    style: styleMunicipio,
+    onEachFeature: (feature, layer) => {
+      layer.on({
+        mouseover: highlightFeature,
+        mouseout: resetHighlight,
+        click: onMunicipioClick
+      });
+    }
+  }).addTo(map);
+
+  map.fitBounds(municipiosLayer.getBounds(), { padding:[30,30] });
+  setTimeout(() => {
+    try{ map.invalidateSize(); }catch(e){}
+  }, 50);
+
+  renderAllocationsPanel();
+  showToast('Mapa pronto.');
+}
+
+btnAdd.onclick = openModalForAdd;
+btnCloseModal.onclick = () => showModal(false);
+modalBackdrop.onclick = (e) => { if (e.target === modalBackdrop) showModal(false); };
+btnSave.onclick = saveEmployee;
+btnDelete.onclick = deleteEmployee;
+
+fType.onchange = () => { fRegionValue.value = ''; syncTypeFields(); };
+fRegionField.onchange = () => { fRegionValue.value = ''; syncTypeFields(); };
+fRegionValue.oninput = () => syncTypeFields();
+
+btnClearSearch.onclick = () => {
+  searchInput.value = '';
+  searchResults.innerHTML = '';
+};
+
+searchInput.oninput = () => {
+  const term = normalize(searchInput.value);
+  if (term.length < 2){
+    searchResults.innerHTML = '';
+    return;
+  }
+  const matches = nameIndex.filter(x => x.nameKey.includes(term)).slice(0, 40);
+  renderSearchResults(matches);
+};
+
+btnZoomSP.onclick = () => {
+  if (municipiosLayer){
+    map.fitBounds(municipiosLayer.getBounds(), { padding:[30,30] });
+  }
+};
+
+init().catch(err => {
+  console.error(err);
+  alert('Erro ao iniciar: ' + (err?.message || err));
+});
+
+</script>
 </body>
 </html>
