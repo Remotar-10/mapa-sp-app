@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mapa Interativo - SP | Clientes e Cobertura por Região</title>
+  <title>São Paulo • Clientes e Cobertura por Região</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
@@ -26,7 +26,7 @@
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
       z-index: 1000;
-      max-width: 440px;
+      max-width: 480px;
     }
     .header h1 { margin: 0 0 8px 0; font-size: 16px; color: #1e3a8a; }
     .header p { margin: 5px 0; font-size: 12px; color: #666; line-height: 1.35; }
@@ -40,7 +40,7 @@
       border-radius: 10px;
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
       z-index: 1000;
-      width: 380px;
+      width: 420px;
       max-height: calc(100vh - 180px);
       overflow: auto;
     }
@@ -108,6 +108,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-wrap: wrap;
     }
     .clientMeta {
       font-size: 12px;
@@ -127,8 +128,8 @@
       font-size: 12px;
       color: #1e3a8a;
       font-weight: 900;
-      cursor: pointer;
-      user-select: none;
+      cursor:pointer;
+      user-select:none;
     }
 
     .swatch {
@@ -140,6 +141,32 @@
       flex: 0 0 auto;
     }
 
+    .legendBox {
+      background: #fff;
+      border: 1px solid rgba(17,24,39,.12);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    .legendBox h4 {
+      font-size: 13px;
+      color: #1e3a8a;
+      margin: 0 0 8px 0;
+      font-weight: 900;
+    }
+    .legendItem {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: #111827;
+      font-weight: 700;
+    }
+    .legendItem:last-child { margin-bottom: 0; }
+    .legendItem .swatch { flex: 0 0 auto; }
+    .legendItem .label { flex: 1; line-height: 1.2; }
+
     .info-box {
       position: absolute;
       bottom: 20px;
@@ -149,7 +176,7 @@
       border-radius: 10px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
       z-index: 1000;
-      max-width: 460px;
+      max-width: 540px;
       display: none;
       overflow: hidden;
     }
@@ -182,9 +209,9 @@
     .close-btn:hover { background: rgba(255, 255, 255, 0.3); }
 
     .info-box-content { padding: 14px 16px; }
-    .info-row { margin-bottom: 10px; display: flex; align-items: flex-start; gap: 10px; }
+    .info-row { margin-bottom: 10px; display: flex; align-items:flex-start; gap: 10px; }
     .info-row:last-child { margin-bottom: 0; }
-    .info-label { font-weight: 900; color: #1e3a8a; font-size: 12px; min-width: 170px; }
+    .info-label { font-weight: 900; color: #1e3a8a; font-size: 12px; min-width: 190px; }
     .info-value { color: #111827; font-size: 12px; font-weight: 700; line-height: 1.35; }
 
     .info-box .button-group { margin-top: 12px; display: flex; gap: 8px; }
@@ -232,7 +259,7 @@
       padding: 9px 10px;
       border: 1px solid #ddd;
       border-radius: 8px;
-      width: 240px;
+      width: 250px;
       font-size: 12px;
     }
 
@@ -248,7 +275,7 @@
       max-height: 220px;
       overflow-y: auto;
       display: none;
-      max-width: 260px;
+      max-width: 270px;
     }
     .search-results p {
       margin: 6px 0;
@@ -270,7 +297,7 @@
       padding: 18px;
     }
     .modal {
-      width: min(760px, 100%);
+      width: min(780px, 100%);
       background: #fff;
       border-radius: 14px;
       overflow: hidden;
@@ -298,10 +325,11 @@
     }
     @media (max-width: 860px){
       .modalBody { grid-template-columns: 1fr; }
-      .tools { width: 340px; }
+      .tools { width: 360px; }
+      .info-label { min-width: 150px; }
     }
     .field label {
-      display: block;
+      display:block;
       font-size: 12px;
       font-weight: 900;
       color: #111827;
@@ -319,7 +347,7 @@
     .modalFoot {
       padding: 12px 16px;
       border-top: 1px solid rgba(17,24,39,.10);
-      display: flex;
+      display:flex;
       justify-content: space-between;
       align-items: center;
       gap: 10px;
@@ -331,16 +359,16 @@
       max-width: 520px;
     }
     .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      border: 1px solid rgba(17,24,39,.12);
-      border-radius: 999px;
-      padding: 3px 8px;
-      font-size: 11px;
-      font-weight: 900;
-      background: #f9fafb;
-      color: #111827;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border:1px solid rgba(17,24,39,.12);
+      border-radius:999px;
+      padding:3px 8px;
+      font-size:11px;
+      font-weight:900;
+      background:#f9fafb;
+      color:#111827;
     }
   </style>
 </head>
@@ -356,9 +384,10 @@
   <div class="header">
     <h1>São Paulo • Clientes e Cobertura por Região</h1>
     <p>
-      1) Selecione o Campo de Região (ex.: NM_MICRO / NM_IMEDIAT).<br>
-      2) Clique em um município para ver a Região (valor exato do campo).<br>
-      3) Cadastre/edite clientes e clique em "Adicionar região do município selecionado".
+      1) Selecione o Campo de Região (ex.: NM_MICRO / NM_IMEDIAT / NM_RGI).<br>
+      2) Clique em um município para ver: Região (valor exato do campo).<br>
+      3) Cadastre/edite clientes e use: "Adicionar região do município selecionado".<br>
+      4) Agora: cada REGIÃO tem sua cor própria; a BORDA fica na cor do CLIENTE responsável.
     </p>
   </div>
 
@@ -373,7 +402,9 @@
 
     <div class="row" style="display:flex; align-items:center; gap:8px;">
       <input id="chkColorByClientCoverage" type="checkbox" style="width:auto;" checked>
-      <label for="chkColorByClientCoverage" style="display:inline; margin:0; font-weight:900; color:#1e3a8a;">Colorir mapa por cobertura dos clientes</label>
+      <label for="chkColorByClientCoverage" style="display:inline; margin:0; font-weight:900; color:#1e3a8a;">
+        Mostrar cobertura (bordas na cor do cliente)
+      </label>
     </div>
 
     <div class="row">
@@ -390,6 +421,20 @@
 
     <div class="divider"></div>
 
+    <h3>Legendas (Visual)</h3>
+
+    <div class="legendBox" id="legendClientes">
+      <h4>Clientes (Borda do Mapa)</h4>
+      <div id="legendClientesContent"></div>
+    </div>
+
+    <div class="legendBox" id="legendRegioes">
+      <h4>Regiões (Preenchimento do Mapa)</h4>
+      <div id="legendRegioesContent"></div>
+    </div>
+
+    <div class="divider"></div>
+
     <h3>Clientes (Cobertura)</h3>
 
     <div class="row">
@@ -401,38 +446,24 @@
 
     <div class="row">
       <div class="hint" id="clientsHint">
-        Dica: cadastre as regiões reais clicando nos municípios e usando "Adicionar região do município selecionado" no modal do cliente.
+        Dica: para cadastrar sem errar, clique num município e use "Adicionar região do município selecionado" no modal do cliente.
       </div>
     </div>
 
     <div class="row">
-      <button class="secondary" onclick="preencherCDOComValeSerra()">
-        CDO: preencher Vale do Paraíba (serra)
-      </button>
+      <button class="secondary" onclick="preencherCDOComValeSerra()">CDO: preencher Vale do Paraíba (serra)</button>
     </div>
-
     <div class="row">
-      <button class="secondary" onclick="preencherSUPPORTEcomABCD()">
-        SUPPORTE: preencher ABCD + MRR
-      </button>
+      <button class="secondary" onclick="preencherSUPPORTEcomABCD()">SUPPORTE: preencher ABCD + MRR</button>
     </div>
-
     <div class="row">
-      <button class="secondary" onclick="preencherWAUXcomGuarulhos()">
-        WAUX: preencher Guarulhos
-      </button>
+      <button class="secondary" onclick="preencherWAUXcomGuarulhos()">WAUX: preencher Guarulhos</button>
     </div>
-
     <div class="row">
-      <button class="secondary" onclick="preencherMONTEBELLOcomPiracicaba()">
-        MONTEBELLO: preencher Piracicaba
-      </button>
+      <button class="secondary" onclick="preencherMONTEBELLOcomPiracicaba()">MONTEBELLO: preencher Piracicaba</button>
     </div>
-
     <div class="row">
-      <button class="secondary" onclick="preencherHIRATAcomSJRP()">
-        HIRATA: preencher São José do Rio Preto
-      </button>
+      <button class="secondary" onclick="preencherHIRATAcomSJRP()">HIRATA: preencher São José do Rio Preto</button>
     </div>
 
     <div class="row">
@@ -485,7 +516,7 @@
         </div>
 
         <div class="field">
-          <label>Cor do Cliente (usada no mapa)</label>
+          <label>Cor do Cliente (usada na borda do mapa)</label>
           <input id="fClientColor" type="color" />
         </div>
 
@@ -603,19 +634,11 @@
       "rio grande da serra"
     ];
 
-    const WAUX_CIDADES = [
-      "guarulhos"
-    ];
+    const WAUX_CIDADES = ["guarulhos"];
+    const MONTEBELLO_CIDADES = ["piracicaba"];
+    const HIRATA_CIDADES = ["sao jose do rio preto"];
 
-    const MONTEBELLO_CIDADES = [
-      "piracicaba"
-    ];
-
-    const HIRATA_CIDADES = [
-      "sao jose do rio preto"
-    ];
-
-    let db = { updatedAt: null, regionField: null, clients: [] };
+    let db = { updatedAt: null, regionField: null, clients: [], regionColors: {} };
 
     let mapa;
     let geoJsonLayer;
@@ -638,6 +661,9 @@
 
     const clientsList = document.getElementById("clientsList");
     const clientsHint = document.getElementById("clientsHint");
+
+    const legendClientesContent = document.getElementById("legendClientesContent");
+    const legendRegioesContent = document.getElementById("legendRegioesContent");
 
     const infoBox = document.getElementById("infoBox");
     const municipioNome = document.getElementById("municipioNome");
@@ -718,6 +744,60 @@
       return (i < CORES_BASE.length) ? CORES_BASE[i] : gerarCorDeterministicaByIndex(i);
     }
 
+    function hashStringToHue(str){
+      const s = String(str || "");
+      let h = 2166136261;
+      for (let i = 0; i < s.length; i++){
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return Math.abs(h) % 360;
+    }
+
+    function hslToHex(h, s, l){
+      h = (h % 360 + 360) % 360;
+      s = Math.max(0, Math.min(100, s)) / 100;
+      l = Math.max(0, Math.min(100, l)) / 100;
+
+      const c = (1 - Math.abs(2*l - 1)) * s;
+      const x = c * (1 - Math.abs(((h/60) % 2) - 1));
+      const m = l - c/2;
+
+      let r=0,g=0,b=0;
+      if (h < 60){ r=c; g=x; b=0; }
+      else if (h < 120){ r=x; g=c; b=0; }
+      else if (h < 180){ r=0; g=c; b=x; }
+      else if (h < 240){ r=0; g=x; b=c; }
+      else if (h < 300){ r=x; g=0; b=c; }
+      else { r=c; g=0; b=x; }
+
+      const R = Math.round((r + m) * 255);
+      const G = Math.round((g + m) * 255);
+      const B = Math.round((b + m) * 255);
+
+      const toHex = (n) => n.toString(16).padStart(2, "0");
+      return "#" + toHex(R) + toHex(G) + toHex(B);
+    }
+
+    function ensureRegionColor(regionValue){
+      const rv = String(regionValue || "").trim();
+      if (!rv) return "#9ca3af";
+      if (!db.regionColors || typeof db.regionColors !== "object") db.regionColors = {};
+      if (db.regionColors[rv]) return db.regionColors[rv];
+
+      const hue = hashStringToHue(rv);
+      const hex = hslToHex(hue, 72, 48);
+      db.regionColors[rv] = hex;
+      return hex;
+    }
+
+    function getRegionColor(regionValue){
+      const rv = String(regionValue || "").trim();
+      if (!rv) return "#e5e7eb";
+      if (db.regionColors && db.regionColors[rv]) return db.regionColors[rv];
+      return ensureRegionColor(rv);
+    }
+
     function loadDb(){
       try{
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -725,6 +805,10 @@
         const parsed = JSON.parse(raw);
         if (!parsed || !Array.isArray(parsed.clients)) return false;
         db = parsed;
+
+        if (!db.regionColors || typeof db.regionColors !== "object") db.regionColors = {};
+        if (!Array.isArray(db.clients)) db.clients = [];
+
         return true;
       }catch(e){
         return false;
@@ -733,10 +817,13 @@
 
     function saveDb(){
       db.updatedAt = nowIso();
+      if (!db.regionColors || typeof db.regionColors !== "object") db.regionColors = {};
       localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
     }
 
     function seedInitialClientsIfEmpty(){
+      if (!Array.isArray(db.clients)) db.clients = [];
+      if (!db.regionColors || typeof db.regionColors !== "object") db.regionColors = {};
       if (db.clients.length) return;
 
       db.clients = [
@@ -757,25 +844,93 @@
       const conflicts = [];
 
       for (const c of db.clients){
-        const color = c.color || "#9ca3af";
-        const name = c.name || "(sem nome)";
+        const clientColor = c.color || "#9ca3af";
+        const clientName = c.name || "(sem nome)";
         const regs = Array.isArray(c.regions) ? c.regions : [];
 
-        for (const rv of regs){
-          const regionValue = String(rv || "").trim();
+        for (const rv0 of regs){
+          const regionValue = String(rv0 || "").trim();
           if (!regionValue) continue;
 
-          if (regionToClientName.has(regionValue) && regionToClientName.get(regionValue) !== name){
-            conflicts.push({ regionValue: regionValue, a: regionToClientName.get(regionValue), b: name });
+          ensureRegionColor(regionValue);
+
+          if (regionToClientName.has(regionValue) && regionToClientName.get(regionValue) !== clientName){
+            conflicts.push({ regionValue: regionValue, a: regionToClientName.get(regionValue), b: clientName });
             continue;
           }
-          regionToClientName.set(regionValue, name);
-          regionToClientColor.set(regionValue, color);
+          regionToClientName.set(regionValue, clientName);
+          regionToClientColor.set(regionValue, clientColor);
         }
       }
 
       if (conflicts.length){
         console.warn("Conflitos: mesma região atribuída a múltiplos clientes:", conflicts);
+      }
+    }
+
+    function renderLegendas(){
+      legendClientesContent.innerHTML = "";
+      legendRegioesContent.innerHTML = "";
+
+      const sortedClients = db.clients.slice().sort(function(a,b){
+        return String(a.name||"").localeCompare(String(b.name||""),"pt-BR");
+      });
+
+      if (!sortedClients.length){
+        legendClientesContent.innerHTML = '<div style="font-size:11px; color:#9ca3af;">Nenhum cliente cadastrado ainda.</div>';
+      } else {
+        for (const c of sortedClients){
+          const item = document.createElement("div");
+          item.className = "legendItem";
+          const sw = document.createElement("span");
+          sw.className = "swatch";
+          sw.style.background = c.color || "#9ca3af";
+          const lbl = document.createElement("span");
+          lbl.className = "label";
+          lbl.textContent = c.name || "(sem nome)";
+          item.appendChild(sw);
+          item.appendChild(lbl);
+          legendClientesContent.appendChild(item);
+        }
+      }
+
+      const regionsSet = new Set();
+      for (const c of db.clients){
+        const regs = Array.isArray(c.regions) ? c.regions : [];
+        for (const rv of regs){
+          const r = String(rv || "").trim();
+          if (r) regionsSet.add(r);
+        }
+      }
+
+      const sortedRegions = Array.from(regionsSet).sort(function(a,b){ return a.localeCompare(b,"pt-BR"); });
+
+      if (!sortedRegions.length){
+        legendRegioesContent.innerHTML = '<div style="font-size:11px; color:#9ca3af;">Nenhuma região cadastrada ainda.</div>';
+      } else {
+        const maxShow = 20;
+        const toShow = sortedRegions.slice(0, maxShow);
+        for (const rv of toShow){
+          const item = document.createElement("div");
+          item.className = "legendItem";
+          const sw = document.createElement("span");
+          sw.className = "swatch";
+          sw.style.background = getRegionColor(rv);
+          const lbl = document.createElement("span");
+          lbl.className = "label";
+          lbl.textContent = rv;
+          item.appendChild(sw);
+          item.appendChild(lbl);
+          legendRegioesContent.appendChild(item);
+        }
+        if (sortedRegions.length > maxShow){
+          const more = document.createElement("div");
+          more.style.fontSize = "11px";
+          more.style.color = "#9ca3af";
+          more.style.marginTop = "6px";
+          more.textContent = "... e mais " + (sortedRegions.length - maxShow) + " região(ões).";
+          legendRegioesContent.appendChild(more);
+        }
       }
     }
 
@@ -833,6 +988,7 @@
       fillRegionsDatalist();
       rebuildCoverageIndex();
       renderClients();
+      renderLegendas();
       if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
       if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
     }
@@ -886,17 +1042,32 @@
       const props = feature.properties || {};
       const baseStroke = "#ffffff";
 
-      if (!chkColorByClientCoverage.checked || !db.regionField){
+      if (!db.regionField){
         return { fillColor: "#9ca3af", weight: 1.2, opacity: 1, color: baseStroke, fillOpacity: 0.35 };
       }
 
       const regionValue = safeStr(props[db.regionField]).trim();
-      const c = regionToClientColor.get(regionValue);
+      const fill = getRegionColor(regionValue);
 
-      if (c){
-        return { fillColor: c, weight: 1.4, opacity: 1, color: baseStroke, fillOpacity: 0.82 };
+      const clientBorder = regionToClientColor.get(regionValue);
+
+      if (!chkColorByClientCoverage.checked){
+        return {
+          fillColor: "#e5e7eb",
+          weight: clientBorder ? 2.2 : 1.0,
+          opacity: 1,
+          color: clientBorder || baseStroke,
+          fillOpacity: 0.55
+        };
       }
-      return { fillColor: "#e5e7eb", weight: 1.0, opacity: 1, color: baseStroke, fillOpacity: 0.55 };
+
+      return {
+        fillColor: fill,
+        weight: clientBorder ? 2.4 : 1.0,
+        opacity: 1,
+        color: clientBorder || baseStroke,
+        fillOpacity: clientBorder ? 0.88 : 0.70
+      };
     }
 
     function highlightFeature(e) {
@@ -986,7 +1157,7 @@
       municipioRegiaoSelecionada.textContent = rv;
       municipioCliente.textContent = client;
 
-      municipioInfo.textContent = "Clique no modal do cliente e adicione esta região para mapear a cobertura.";
+      municipioInfo.textContent = "A cor do preenchimento é da REGIÃO; se houver cliente, a borda indica o responsável.";
     }
 
     function fecharInfo(){
@@ -1112,6 +1283,9 @@
       updateClientRegionsUI([]);
       showModal(true);
       lastEditedClientId = null;
+
+      const rv = getSelectedRegionValue();
+      btnAddSelectedRegion.disabled = !(rv && db.regionField);
     }
 
     function openClientModalForEdit(idx){
@@ -1135,6 +1309,7 @@
 
       const rv = getSelectedRegionValue();
       btnAddSelectedRegion.disabled = !(rv && db.regionField);
+      btnQuickAddRegion.disabled = !(rv && db.regionField && lastEditedClientId);
     }
 
     function closeClientModal(){
@@ -1172,6 +1347,8 @@
         alert("Região vazia.");
         return false;
       }
+
+      ensureRegionColor(rv);
 
       for (const c of db.clients){
         if (c === client) continue;
@@ -1211,7 +1388,8 @@
         if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
         updateClientRegionsUI(client.regions);
         renderClients();
-        mostrarInfoMunicipio(selectedFeature ? (selectedFeature.properties || {}) : {});
+        renderLegendas();
+        if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
       }
     }
 
@@ -1238,6 +1416,7 @@
         if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
         updateClientRegionsUI(client.regions);
         renderClients();
+        renderLegendas();
       }
     }
 
@@ -1253,6 +1432,7 @@
       if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
       updateClientRegionsUI(client.regions);
       renderClients();
+      renderLegendas();
       if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
     }
 
@@ -1269,6 +1449,7 @@
       if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
       updateClientRegionsUI(client.regions);
       renderClients();
+      renderLegendas();
       if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
     }
 
@@ -1302,7 +1483,7 @@
       rebuildCoverageIndex();
       if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
       renderClients();
-
+      renderLegendas();
       if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
 
       alert("Cliente salvo.");
@@ -1324,6 +1505,7 @@
       rebuildCoverageIndex();
       if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
       renderClients();
+      renderLegendas();
       if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
 
       alert("Cliente excluído.");
@@ -1358,6 +1540,7 @@
         rebuildCoverageIndex();
         if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
         renderClients();
+        renderLegendas();
         if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
         alert('Região "' + rv + '" adicionada ao cliente "' + c.name + '".');
       }
@@ -1396,7 +1579,7 @@
     }
 
     function exportClientsJson(){
-      const payload = { updatedAt: db.updatedAt, regionField: db.regionField, clients: db.clients };
+      const payload = { updatedAt: db.updatedAt, regionField: db.regionField, regionColors: db.regionColors, clients: db.clients };
       const txt = JSON.stringify(payload, null, 2);
 
       const blob = new Blob([txt], { type: "application/json;charset=utf-8" });
@@ -1408,136 +1591,6 @@
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    }
-
-    function preencherCDOComValeSerra(){
-      if (!db.regionField){
-        alert("Selecione antes o Campo de Região no painel (ex.: NM_RGI, NM_MICRO, etc.).");
-        return;
-      }
-      if (!loadedFeatures.length){
-        alert("GeoJSON de municípios ainda não carregado.");
-        return;
-      }
-
-      const cdo = db.clients.find(function(c){
-        return (c.name || "").toUpperCase().indexOf("CDO") !== -1;
-      });
-      if (!cdo){
-        alert('Cliente "CDO" não encontrado na lista de clientes.');
-        return;
-      }
-
-      const alvoSet = new Set(VALE_SERRA_CIDADES);
-      const encontrados = [];
-      const naoEncontrados = new Set(VALE_SERRA_CIDADES);
-      const regioesSet = new Set();
-
-      for (const ft of loadedFeatures){
-        const props = ft.properties || {};
-        const nameField = guessNameField(props);
-        const nomeOriginal = safeStr(props[nameField]).trim();
-        if (!nomeOriginal) continue;
-        const norm = normalizeMunNameForMatch(nomeOriginal);
-
-        if (alvoSet.has(norm)){
-          naoEncontrados.delete(norm);
-          encontrados.push(nomeOriginal);
-          const rv = safeStr(props[db.regionField]).trim();
-          if (rv) regioesSet.add(rv);
-        }
-      }
-
-      if (!regioesSet.size){
-        alert("Não consegui achar nenhuma região para o Vale (serra) com o Campo de Região atual. Verifique se o campo está correto.");
-        return;
-      }
-
-      let adicionadas = 0;
-      regioesSet.forEach(function(rv){
-        if (addRegionToClient(cdo, rv)) adicionadas += 1;
-      });
-
-      saveDb();
-      rebuildCoverageIndex();
-      if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
-      renderClients();
-      if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
-
-      const listaEncontrados = encontrados.sort().join(", ");
-      const listaNao = Array.from(naoEncontrados).sort().join(", ");
-
-      let msg = "Regiões do Vale do Paraíba (serra) processadas para o cliente CDO.\n\n";
-      msg += "Campo de Região: " + db.regionField + "\n";
-      msg += "Regiões únicas adicionadas ao CDO: " + String(adicionadas) + "\n\n";
-      msg += "Municípios encontrados no GeoJSON:\n" + (listaEncontrados || "-") + "\n\n";
-      msg += "Municípios da lista que NÃO encontrei (nome diferente no GeoJSON?):\n" + (listaNao || "-");
-      alert(msg);
-    }
-
-    function preencherSUPPORTEcomABCD(){
-      if (!db.regionField){
-        alert("Selecione antes o Campo de Região no painel (ex.: NM_RGI, NM_MICRO, etc.).");
-        return;
-      }
-      if (!loadedFeatures.length){
-        alert("GeoJSON de municípios ainda não carregado.");
-        return;
-      }
-
-      const suporte = db.clients.find(function(c){
-        return (c.name || "").toUpperCase().indexOf("SUPPORTE") !== -1;
-      });
-      if (!suporte){
-        alert('Cliente "SUPPORTE" não encontrado na lista de clientes.');
-        return;
-      }
-
-      const alvoSet = new Set(ABCD_CIDADES);
-      const encontrados = [];
-      const naoEncontrados = new Set(ABCD_CIDADES);
-      const regioesSet = new Set();
-
-      for (const ft of loadedFeatures){
-        const props = ft.properties || {};
-        const nameField = guessNameField(props);
-        const nomeOriginal = safeStr(props[nameField]).trim();
-        if (!nomeOriginal) continue;
-
-        const norm = normalizeMunNameForMatch(nomeOriginal);
-
-        if (alvoSet.has(norm)){
-          naoEncontrados.delete(norm);
-          encontrados.push(nomeOriginal);
-
-          const rv = safeStr(props[db.regionField]).trim();
-          if (rv) regioesSet.add(rv);
-        }
-      }
-
-      if (!regioesSet.size){
-        alert("Não consegui achar nenhuma região para o ABCD com o Campo de Região atual. Verifique se o campo está correto.");
-      } else {
-        let adicionadas = 0;
-        regioesSet.forEach(function(rv){
-          if (addRegionToClient(suporte, rv)) adicionadas += 1;
-        });
-
-        saveDb();
-        rebuildCoverageIndex();
-        if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
-        renderClients();
-        if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
-      }
-
-      const listaEncontrados = encontrados.sort().join(", ");
-      const listaNao = Array.from(naoEncontrados).sort().join(", ");
-
-      let msg = "Regiões do ABCD + MRR processadas para o cliente SUPPORTE.\n\n";
-      msg += "Campo de Região: " + db.regionField + "\n";
-      msg += "Municípios encontrados no GeoJSON:\n" + (listaEncontrados || "-") + "\n\n";
-      msg += "Municípios da lista que NÃO encontrei (nome diferente no GeoJSON?):\n" + (listaNao || "-");
-      alert(msg);
     }
 
     function preencherClientePorListaDeMunicipios(clientNameContains, listaMunicipiosNormalizados, tituloAcao){
@@ -1595,6 +1648,7 @@
       rebuildCoverageIndex();
       if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
       renderClients();
+      renderLegendas();
       if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
 
       const listaEncontrados = encontrados.sort().join(", ");
@@ -1609,14 +1663,18 @@
       alert(msg);
     }
 
+    function preencherCDOComValeSerra(){
+      preencherClientePorListaDeMunicipios("CDO", VALE_SERRA_CIDADES, "CDO: Vale do Paraíba (serra)");
+    }
+    function preencherSUPPORTEcomABCD(){
+      preencherClientePorListaDeMunicipios("SUPPORTE", ABCD_CIDADES, "SUPPORTE: ABCD + MRR");
+    }
     function preencherWAUXcomGuarulhos(){
       preencherClientePorListaDeMunicipios("WAUX", WAUX_CIDADES, "WAUX: Guarulhos");
     }
-
     function preencherMONTEBELLOcomPiracicaba(){
       preencherClientePorListaDeMunicipios("MONTEBELLO", MONTEBELLO_CIDADES, "MONTEBELLO: Piracicaba");
     }
-
     function preencherHIRATAcomSJRP(){
       preencherClientePorListaDeMunicipios("HIRATA", HIRATA_CIDADES, "HIRATA: São José do Rio Preto");
     }
@@ -1726,6 +1784,7 @@
       fillRegionsDatalist();
       rebuildCoverageIndex();
       renderClients();
+      renderLegendas();
 
       if (selectedFeature){
         mostrarInfoMunicipio(selectedFeature.properties || {});
@@ -1739,7 +1798,7 @@
     chkColorByClientCoverage.addEventListener("change", function(){
       if (!geoJsonLayer) return;
       if (chkColorByClientCoverage.checked && !db.regionField){
-        alert("Para colorir, selecione primeiro o Campo de Região.");
+        alert("Para exibir cobertura, selecione primeiro o Campo de Região.");
         chkColorByClientCoverage.checked = false;
         return;
       }
@@ -1756,8 +1815,11 @@
     window.addEventListener("load", function(){
       loadDb();
       seedInitialClientsIfEmpty();
+
       rebuildCoverageIndex();
       renderClients();
+      renderLegendas();
+
       initMap();
     });
   </script>
