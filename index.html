@@ -405,10 +405,15 @@
       </div>
     </div>
 
-    <!-- NOVO: botão automático para CDO / Vale do Paraíba (serra) -->
     <div class="row">
       <button class="secondary" onclick="preencherCDOComValeSerra()">
         CDO: preencher Vale do Paraíba (serra)
+      </button>
+    </div>
+
+    <div class="row">
+      <button class="secondary" onclick="preencherSUPPORTEcomABCD()">
+        SUPPORTE: preencher ABCD + MRR
       </button>
     </div>
 
@@ -534,6 +539,52 @@
       "#546e7a", "#d81b60", "#9e9d24", "#8d6e63", "#26a69a"
     ];
 
+    const VALE_SERRA_CIDADES = [
+      "igarata",
+      "jacarei",
+      "santa branca",
+      "jambeiro",
+      "monteiro lobato",
+      "sao jose dos campos",
+      "cacapava",
+      "taubate",
+      "tremembe",
+      "pindamonhangaba",
+      "campos do jordao",
+      "santo antonio do pinhal",
+      "natividade da serra",
+      "redencao da serra",
+      "paraibuna",
+      "lagoinha",
+      "cunha",
+      "sao luiz do paraitinga",
+      "roseira",
+      "aparecida",
+      "potim",
+      "guaratingueta",
+      "canas",
+      "lorena",
+      "cachoeira paulista",
+      "silveiras",
+      "cruzeiro",
+      "lavrinhas",
+      "queluz",
+      "areias",
+      "sao jose do barreiro",
+      "arapei",
+      "bananal"
+    ];
+
+    const ABCD_CIDADES = [
+      "santo andre",
+      "sao bernardo do campo",
+      "sao caetano do sul",
+      "diadema",
+      "maua",
+      "ribeirao pires",
+      "rio grande da serra"
+    ];
+
     let db = { updatedAt: null, regionField: null, clients: [] };
 
     let mapa;
@@ -610,42 +661,6 @@
       return removerAcentos(name).replace(/\./g, "").replace(/municipio de /g, "").trim();
     }
 
-    const VALE_SERRA_CIDADES = [
-      "igarata",
-      "jacarei",
-      "santa branca",
-      "jambeiro",
-      "monteiro lobato",
-      "sao jose dos campos",
-      "cacapava",
-      "taubate",
-      "tremembe",
-      "pindamonhangaba",
-      "campos do jordao",
-      "santo antonio do pinhal",
-      "natividade da serra",
-      "redencao da serra",
-      "paraibuna",
-      "lagoinha",
-      "cunha",
-      "sao luiz do paraitinga",
-      "roseira",
-      "aparecida",
-      "potim",
-      "guaratingueta",
-      "canas",
-      "lorena",
-      "cachoeira paulista",
-      "silveiras",
-      "cruzeiro",
-      "lavrinhas",
-      "queluz",
-      "areias",
-      "sao jose do barreiro",
-      "arapei",
-      "bananal"
-    ];
-
     function guessNameField(props) {
       const keys = Object.keys(props || {});
       return keys.find(k => /NM.*MUN/i.test(k)) || keys.find(k => /NOME/i.test(k)) || "NM_MUN";
@@ -696,7 +711,7 @@
 
       db.clients = [
         { id:"C-001", name:"CDO", color: generateClientColor(), notes:"De Jacareí pra frente até o Rio de Janeiro (todo o Vale do Paraíba). Adicione as regiões clicando nos municípios do Vale.", regions: [] },
-        { id:"C-002", name:"SUPPORTE", color: generateClientColor(), notes:"ABCD (Santo André, São Bernardo, São Caetano, Diadema). Adicione as regiões clicando nesses municípios.", regions: [] },
+        { id:"C-002", name:"SUPPORTE", color: generateClientColor(), notes:"ABCD + Mauá, Ribeirão Pires e Rio Grande da Serra. Adicione as regiões clicando nesses municípios.", regions: [] },
         { id:"C-003", name:"WAUX", color: generateClientColor(), notes:"Região de Guarulhos (adicione clicando em Guarulhos).", regions: [] },
         { id:"C-004", name:"MONTEBELLO", color: generateClientColor(), notes:"Região de Piracicaba (adicione clicando em Piracicaba).", regions: [] },
         { id:"C-005", name:"HIRATA", color: generateClientColor(), notes:"Região de São José do Rio Preto (adicione clicando em São José do Rio Preto).", regions: [] }
@@ -1425,6 +1440,73 @@
       let msg = "Regiões do Vale do Paraíba (serra) processadas para o cliente CDO.\n\n";
       msg += "Campo de Região: " + db.regionField + "\n";
       msg += "Regiões únicas adicionadas ao CDO: " + String(adicionadas) + "\n\n";
+      msg += "Municípios encontrados no GeoJSON:\n" + (listaEncontrados || "-") + "\n\n";
+      msg += "Municípios da lista que NÃO encontrei (nome diferente no GeoJSON?):\n" + (listaNao || "-");
+      alert(msg);
+    }
+
+    function preencherSUPPORTEcomABCD(){
+      if (!db.regionField){
+        alert("Selecione antes o Campo de Região no painel (ex.: NM_RGI, NM_MICRO, etc.).");
+        return;
+      }
+      if (!loadedFeatures.length){
+        alert("GeoJSON de municípios ainda não carregado.");
+        return;
+      }
+
+      const suporte = db.clients.find(function(c){
+        return (c.name || "").toUpperCase().indexOf("SUPPORTE") !== -1;
+      });
+      if (!suporte){
+        alert('Cliente "SUPPORTE" não encontrado na lista de clientes.');
+        return;
+      }
+
+      const alvoSet = new Set(ABCD_CIDADES);
+      const encontrados = [];
+      const naoEncontrados = new Set(ABCD_CIDADES);
+      const regioesSet = new Set();
+
+      for (const ft of loadedFeatures){
+        const props = ft.properties || {};
+        const nameField = guessNameField(props);
+        const nomeOriginal = safeStr(props[nameField]).trim();
+        if (!nomeOriginal) continue;
+
+        const norm = normalizeMunNameForMatch(nomeOriginal);
+
+        if (alvoSet.has(norm)){
+          naoEncontrados.delete(norm);
+          encontrados.push(nomeOriginal);
+
+          const rv = safeStr(props[db.regionField]).trim();
+          if (rv) regioesSet.add(rv);
+        }
+      }
+
+      if (!regioesSet.size){
+        alert("Não consegui achar nenhuma região para o ABCD com o Campo de Região atual. Verifique se o campo está correto.");
+        return;
+      }
+
+      let adicionadas = 0;
+      regioesSet.forEach(function(rv){
+        if (addRegionToClient(suporte, rv)) adicionadas += 1;
+      });
+
+      saveDb();
+      rebuildCoverageIndex();
+      if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
+      renderClients();
+      if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
+
+      const listaEncontrados = encontrados.sort().join(", ");
+      const listaNao = Array.from(naoEncontrados).sort().join(", ");
+
+      let msg = "Regiões do ABCD + MRR processadas para o cliente SUPPORTE.\n\n";
+      msg += "Campo de Região: " + db.regionField + "\n";
+      msg += "Regiões únicas adicionadas ao SUPPORTE: " + String(adicionadas) + "\n\n";
       msg += "Municípios encontrados no GeoJSON:\n" + (listaEncontrados || "-") + "\n\n";
       msg += "Municípios da lista que NÃO encontrei (nome diferente no GeoJSON?):\n" + (listaNao || "-");
       alert(msg);
