@@ -385,9 +385,9 @@
     <h1>São Paulo • Clientes e Cobertura por Região</h1>
     <p>
       1) Selecione o Campo de Região (ex.: NM_MICRO / NM_IMEDIAT / NM_RGI).<br>
-      2) Clique em um município para ver: Região (valor exato do campo).<br>
-      3) Cadastre/edite clientes e use: "Adicionar região do município selecionado".<br>
-      4) Agora: cada REGIÃO tem sua cor própria; a BORDA fica na cor do CLIENTE responsável.
+      2) Clique em um município para ver a Região (valor exato do campo).<br>
+      3) Cadastre/edite clientes e use "Adicionar região do município selecionado".<br>
+      4) Preenchimento = cor da REGIÃO • Borda = cor do CLIENTE.
     </p>
   </div>
 
@@ -445,8 +445,15 @@
     </div>
 
     <div class="row">
+      <button class="secondary" onclick="repairDefaultClients()">
+        Reparar clientes padrão (CDO, SUPPORTE, WAUX, MONTEBELLO, HIRATA)
+      </button>
+    </div>
+
+    <div class="row">
       <div class="hint" id="clientsHint">
-        Dica: para cadastrar sem errar, clique num município e use "Adicionar região do município selecionado" no modal do cliente.
+        Dica: cadastre as regiões reais clicando nos municípios e usando
+        "Adicionar região do município selecionado" no modal do cliente.
       </div>
     </div>
 
@@ -485,7 +492,9 @@
 
       <div class="button-group">
         <button class="secondary" onclick="zoomSP()">Ver SP</button>
-        <button onclick="quickAddRegionToLastEditedClient()" id="btnQuickAddRegion" disabled>Adicionar região ao último cliente editado</button>
+        <button onclick="quickAddRegionToLastEditedClient()" id="btnQuickAddRegion" disabled>
+          Adicionar região ao último cliente editado
+        </button>
       </div>
     </div>
   </div>
@@ -544,8 +553,12 @@
 
         <div class="field" style="grid-column: 1 / -1;">
           <div style="display:flex; gap:8px;">
-            <button onclick="addRegionFromSelectedMunicipio()" id="btnAddSelectedRegion" style="background:#1e3a8a; color:#fff; border:none; border-radius:10px; padding:10px 12px; font-weight:900; cursor:pointer;" disabled>Adicionar região do município selecionado</button>
-            <button onclick="clearClientRegions()" class="danger" style="background:#b91c1c; color:#fff; border:none; border-radius:10px; padding:10px 12px; font-weight:900; cursor:pointer;">Limpar regiões</button>
+            <button onclick="addRegionFromSelectedMunicipio()" id="btnAddSelectedRegion" style="background:#1e3a8a; color:#fff; border:none; border-radius:10px; padding:10px 12px; font-weight:900; cursor:pointer;" disabled>
+              Adicionar região do município selecionado
+            </button>
+            <button onclick="clearClientRegions()" class="danger" style="background:#b91c1c; color:#fff; border:none; border-radius:10px; padding:10px 12px; font-weight:900; cursor:pointer;">
+              Limpar regiões
+            </button>
           </div>
         </div>
 
@@ -557,7 +570,7 @@
 
       <div class="modalFoot">
         <div class="note" id="modalNote">
-          Os dados são salvos no seu navegador (localStorage). Se trocar de computador/navegador, não aparece.
+          Os dados são salvos no seu navegador (localStorage). Se trocar de computador/navegador, não aparecem automaticamente.
         </div>
         <div style="display:flex; gap:8px;">
           <button class="danger" id="btnDeleteClient" onclick="deleteClient()" style="background:#b91c1c; color:#fff; border:none; border-radius:10px; padding:10px 12px; font-weight:900; cursor:pointer; display:none;">Excluir</button>
@@ -589,39 +602,14 @@
     ];
 
     const VALE_SERRA_CIDADES = [
-      "igarata",
-      "jacarei",
-      "santa branca",
-      "jambeiro",
-      "monteiro lobato",
-      "sao jose dos campos",
-      "cacapava",
-      "taubate",
-      "tremembe",
-      "pindamonhangaba",
-      "campos do jordao",
-      "santo antonio do pinhal",
-      "natividade da serra",
-      "redencao da serra",
-      "paraibuna",
-      "lagoinha",
-      "cunha",
-      "sao luiz do paraitinga",
-      "roseira",
-      "aparecida",
-      "potim",
-      "guaratingueta",
-      "canas",
-      "lorena",
-      "cachoeira paulista",
-      "silveiras",
-      "cruzeiro",
-      "lavrinhas",
-      "queluz",
-      "areias",
-      "sao jose do barreiro",
-      "arapei",
-      "bananal"
+      "igarata","jacarei","santa branca","jambeiro","monteiro lobato",
+      "sao jose dos campos","cacapava","taubate","tremembe",
+      "pindamonhangaba","campos do jordao","santo antonio do pinhal",
+      "natividade da serra","redencao da serra","paraibuna","lagoinha",
+      "cunha","sao luiz do paraitinga","roseira","aparecida","potim",
+      "guaratingueta","canas","lorena","cachoeira paulista","silveiras",
+      "cruzeiro","lavrinhas","queluz","areias","sao jose do barreiro",
+      "arapei","bananal"
     ];
 
     const ABCD_CIDADES = [
@@ -643,7 +631,6 @@
     let mapa;
     let geoJsonLayer;
     let contournoLayer;
-
     let loadedFeatures = [];
 
     let selectedFeature = null;
@@ -824,17 +811,50 @@
     function seedInitialClientsIfEmpty(){
       if (!Array.isArray(db.clients)) db.clients = [];
       if (!db.regionColors || typeof db.regionColors !== "object") db.regionColors = {};
-      if (db.clients.length) return;
 
-      db.clients = [
-        { id:"C-001", name:"CDO", color: generateClientColor(), notes:"De Jacareí pra frente até o Rio de Janeiro (todo o Vale do Paraíba). Adicione as regiões clicando nos municípios do Vale.", regions: [] },
-        { id:"C-002", name:"SUPPORTE", color: generateClientColor(), notes:"ABCD + Mauá, Ribeirão Pires e Rio Grande da Serra. Adicione as regiões clicando nesses municípios.", regions: [] },
-        { id:"C-003", name:"WAUX", color: generateClientColor(), notes:"Região de Guarulhos (adicione clicando em Guarulhos).", regions: [] },
-        { id:"C-004", name:"MONTEBELLO", color: generateClientColor(), notes:"Região de Piracicaba (adicione clicando em Piracicaba).", regions: [] },
-        { id:"C-005", name:"HIRATA", color: generateClientColor(), notes:"Região de São José do Rio Preto (adicione clicando em São José do Rio Preto).", regions: [] }
+      const defaults = [
+        { id:"C-001", name:"CDO", notes:"De Jacareí pra frente até o Rio de Janeiro (todo o Vale do Paraíba). Adicione as regiões clicando nos municípios do Vale." },
+        { id:"C-002", name:"SUPPORTE", notes:"ABCD + Mauá, Ribeirão Pires e Rio Grande da Serra." },
+        { id:"C-003", name:"WAUX", notes:"Região de Guarulhos (adicione clicando em Guarulhos)." },
+        { id:"C-004", name:"MONTEBELLO", notes:"Região de Piracicaba (adicione clicando em Piracicaba)." },
+        { id:"C-005", name:"HIRATA", notes:"Região de São José do Rio Preto (adicione clicando em SJRP)." }
       ];
 
-      saveDb();
+      const norm = (s) => removerAcentos(String(s || "")).toUpperCase().replace(/\s+/g, " ").trim();
+
+      let changed = false;
+
+      for (const d of defaults){
+        const exists = db.clients.some(c => norm(c.name) === norm(d.name));
+        if (!exists){
+          db.clients.push({
+            id: d.id,
+            name: d.name,
+            color: generateClientColor(),
+            notes: d.notes,
+            regions: []
+          });
+          changed = true;
+        }
+      }
+
+      for (const c of db.clients){
+        if (!c.color) { c.color = "#9ca3af"; changed = true; }
+        if (!Array.isArray(c.regions)) { c.regions = []; changed = true; }
+        if (c.notes === undefined || c.notes === null) { c.notes = ""; changed = true; }
+        if (c.id === undefined || c.id === null) { c.id = ""; changed = true; }
+      }
+
+      if (changed) saveDb();
+    }
+
+    function repairDefaultClients(){
+      seedInitialClientsIfEmpty();
+      rebuildCoverageIndex();
+      renderClients();
+      renderLegendas();
+      if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
+      alert("Reparo concluído.\nClientes padrão verificados/criados e cobertura recalculada.");
     }
 
     function rebuildCoverageIndex(){
@@ -1157,7 +1177,7 @@
       municipioRegiaoSelecionada.textContent = rv;
       municipioCliente.textContent = client;
 
-      municipioInfo.textContent = "A cor do preenchimento é da REGIÃO; se houver cliente, a borda indica o responsável.";
+      municipioInfo.textContent = "Preenchimento = cor da região; se houver cliente, a borda indica o responsável.";
     }
 
     function fecharInfo(){
@@ -1604,13 +1624,23 @@
       }
 
       const alvoNome = String(clientNameContains || "").toUpperCase().trim();
-      const cliente = db.clients.find(function(c){
+      let cliente = db.clients.find(function(c){
         return (String(c.name || "").toUpperCase().indexOf(alvoNome) !== -1);
       });
 
       if (!cliente){
-        alert('Cliente "' + clientNameContains + '" não encontrado na lista de clientes.');
-        return;
+        const ok = confirm('Cliente "' + clientNameContains + '" não encontrado na lista de clientes.\nDeseja criar automaticamente e continuar?');
+        if (!ok) return;
+
+        cliente = {
+          id: "",
+          name: String(clientNameContains || "").trim() || "Novo Cliente",
+          color: generateClientColor(),
+          notes: "Criado automaticamente pelo botão de preenchimento.",
+          regions: []
+        };
+        db.clients.push(cliente);
+        saveDb();
       }
 
       const alvoSet = new Set(listaMunicipiosNormalizados || []);
