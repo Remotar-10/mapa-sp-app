@@ -1,640 +1,669 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>São Paulo | Alocação de Funcionários por Município</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa Interativo - SP | Clientes e Cobertura por Região</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
 <style>
-:root{
---panel:#ffffff;
---muted:#6b7280;
---text:#111827;
---brand:#1e3a8a;
-
-  --c-none:#bdbdbd;
-  --c-inactive:#c62828;
-  --c-active:#2e7d32;
-
-  --c-selected:#ff6f00;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+background: #1a1a1a;
+height: 100vh;
+overflow: hidden;
 }
+#map { width: 100%; height: 100%; }
 
-html, body { height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-body{ overflow:hidden; background:#f3f4f6; }
+.header {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: white;
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+  max-width: 440px;
+}
+.header h1 { margin: 0 0 8px 0; font-size: 16px; color: #1e3a8a; }
+.header p { margin: 5px 0; font-size: 12px; color: #666; line-height: 1.35; }
 
-/* APP GRID (2 colunas) */
-.app{
-  position:fixed;
-  inset:16px;
-  display:grid;
-  grid-template-columns: 1fr 460px;
-  gap:12px;
-  box-sizing:border-box;
+.tools {
+  position: absolute;
+  top: 140px;
+  right: 20px;
+  background: white;
+  padding: 14px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+  width: 380px;
+  max-height: calc(100vh - 180px);
+  overflow: auto;
 }
+.tools h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #1e3a8a;
+}
+.tools .row { margin-bottom: 10px; }
+.tools label { display:block; font-size: 12px; color:#1e3a8a; font-weight: 800; margin-bottom: 6px; }
+.tools select, .tools textarea, .tools input {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 9px;
+  font-size: 12px;
+  outline: none;
+}
+.tools textarea {
+  min-height: 110px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.tools .btns { display:flex; gap:8px; }
+.tools button {
+  flex: 1;
+  padding: 10px 12px;
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+.tools button.secondary { background: #4B5563; }
+.tools button.danger { background: #b91c1c; }
+.tools button:disabled { opacity: 0.55; cursor: not-allowed; }
+.tools .hint { font-size: 11px; color: #666; line-height: 1.35; }
 
-/* MAPA */
-#map, .map { height:100%; width:100%; }
-.map{
-  border-radius:10px;
-  overflow:hidden;
-  box-shadow:0 10px 30px rgba(0,0,0,.18);
-  border:1px solid rgba(17,24,39,.06);
-  background:#fff;
-}
+.divider { height: 1px; background: #e5e7eb; margin: 12px 0; }
 
-/* CARD / PAINEL */
-.card{
-  background:var(--panel);
-  border-radius:10px;
-  box-shadow:0 10px 30px rgba(0,0,0,.18);
-  border:1px solid rgba(17,24,39,.06);
+.clientsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-
-.panel{
-  display:flex;
-  flex-direction:column;
-  min-height:180px;
-  overflow:hidden;
-  pointer-events:auto;
+.clientItem {
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
 }
-
-.panel-head{
-  padding:12px 14px;
-  border-bottom:1px solid rgba(17,24,39,.08);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
+.clientItemTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
 }
-.panel-head .title{
-  font-weight:900;
-  color:#111827;
-  font-size:13px;
+.clientName {
+  font-weight: 950;
+  font-size: 13px;
+  color: #111827;
+  line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.panel-head .sub{
-  color:var(--muted);
-  font-size:11px;
-  margin-top:2px;
-  line-height:1.25;
+.clientMeta {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+  line-height: 1.35;
 }
-
-.panel-body{
-  padding:12px 14px;
-  overflow:auto;
-  flex:1;
+.clientActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  white-space: nowrap;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
-
-.section{ display:block; }
-
-.divider{
-  height:1px;
-  background: rgba(17,24,39,.10);
-  margin:12px 0;
-}
-
-.btn{
-  padding:9px 10px;
-  border-radius:8px;
-  border:1px solid rgba(17,24,39,.12);
-  background:#fff;
-  cursor:pointer;
-  font-size:12px;
-  font-weight:800;
-  color:#111827;
-  user-select:none;
-  line-height:1;
-}
-.btn.primary{
-  background:var(--brand);
-  border-color:var(--brand);
-  color:#fff;
-}
-.btn.danger{
-  background:#b91c1c;
-  border-color:#b91c1c;
-  color:#fff;
-}
-.btn:disabled{ opacity:.55; cursor:not-allowed; }
-
-.btn.xs{
-  padding:6px 12px;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:900;
-}
-
-.muted{ color:var(--muted); }
-
-.search{
-  display:flex; gap:8px;
-  margin-bottom:10px;
-}
-
-input, .input{
-  width:100%;
-  padding:9px 10px;
-  border-radius:8px;
-  border:1px solid rgba(17,24,39,.12);
-  font-size:13px;
-  box-sizing:border-box;
-  background:#fff;
+.link {
+  font-size: 12px;
+  color: #1e3a8a;
+  font-weight: 900;
+  cursor: pointer;
+  user-select: none;
 }
 
-.kv{
-  display:grid;
-  grid-template-columns: 120px 1fr;
-  gap:6px 10px;
-  font-size:12px;
-  margin:8px 0 10px 0;
-}
-.kv div:nth-child(odd){ color:var(--muted); }
-.kv div:nth-child(even){ color:#111827; font-weight:700; }
-
-.pill{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding:3px 8px;
-  border-radius:999px;
-  font-size:11px;
-  font-weight:900;
-  border:1px solid rgba(17,24,39,.12);
-  background:#fff;
-  color:#111827;
-}
-.pill.green{ background:#e8f5e9; border-color:#c8e6c9; color:#1b5e20; }
-.pill.red{ background:#ffebee; border-color:#ffcdd2; color:#b71c1c; }
-.pill.gray{ background:#f3f4f6; border-color:#e5e7eb; color:#374151; }
-.pill.orange{ background:#fff3e0; border-color:#ffe0b2; color:#e65100; }
-
-.list{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(17,24,39,.16);
+  display: inline-block;
+  flex: 0 0 auto;
 }
 
-.item{
-  border:1px solid rgba(17,24,39,.10);
-  border-radius:10px;
-  padding:10px 10px;
-  background:#fff;
+.info-box {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: white;
+  padding: 0;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+  max-width: 460px;
+  display: none;
+  overflow: hidden;
 }
-.item .row{
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-  align-items:flex-start;
+.info-box-header {
+  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  color: white;
+  padding: 16px;
+  position: relative;
 }
-.item .name{
-  font-weight:950;
-  color:#111827;
-  font-size:13px;
-  line-height:1.2;
+.info-box-header h2 { margin: 0; font-size: 18px; font-weight: 900; }
+.info-box-header p { margin: 7px 0 0 0; font-size: 12px; opacity: 0.92; line-height: 1.3; }
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: white;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background 0.2s;
 }
-.item .meta{
-  font-size:12px;
-  color:var(--muted);
-  margin-top:4px;
-  line-height:1.25;
+.close-btn:hover { background: rgba(255, 255, 255, 0.3); }
+
+.info-box-content { padding: 14px 16px; }
+.info-row { margin-bottom: 10px; display: flex; align-items: flex-start; gap: 10px; }
+.info-row:last-child { margin-bottom: 0; }
+.info-label { font-weight: 900; color: #1e3a8a; font-size: 12px; min-width: 170px; }
+.info-value { color: #111827; font-size: 12px; font-weight: 700; line-height: 1.35; }
+.info-value.empty { color: #999; font-style: italic; font-weight: 600; }
+
+.info-box .button-group { margin-top: 12px; display: flex; gap: 8px; }
+.info-box button {
+  flex: 1;
+  padding: 10px 12px;
+  background: #1e3a8a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  transition: background 0.2s;
 }
-.item .actions{
-  display:flex;
-  gap:10px;
-  align-items:center;
-  white-space:nowrap;
-}
-.link{
-  font-size:12px;
-  color:var(--brand);
-  font-weight:900;
-  cursor:pointer;
-  user-select:none;
+.info-box button:hover { background: #152d6b; }
+.info-box button.secondary { background: #4B5563; }
+.info-box button.secondary:hover { background: #3d4451; }
+
+.loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 18px 22px;
+  border-radius: 10px;
+  z-index: 2000;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  max-width: 560px;
+  text-align: center;
 }
 
-/* MODAL */
-.modal-backdrop{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.45);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:2000;
-  padding:16px;
+.search-box {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  z-index: 1000;
 }
-.modal{
-  width:min(760px, 100%);
-  background:#fff;
-  border-radius:14px;
-  box-shadow:0 20px 60px rgba(0,0,0,.35);
-  overflow:hidden;
-  border:1px solid rgba(17,24,39,.12);
+.search-box input {
+  padding: 9px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  width: 240px;
+  font-size: 12px;
 }
-.modal-head{
-  padding:14px 16px;
-  border-bottom:1px solid rgba(17,24,39,.10);
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;
+
+.search-results {
+  position: absolute;
+  bottom: 60px;
+  right: 20px;
+  background: white;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  z-index: 1000;
+  max-height: 220px;
+  overflow-y: auto;
+  display: none;
+  max-width: 260px;
 }
-.modal-head .t{
-  font-weight:950;
-  color:#111827;
-  font-size:14px;
+.search-results p {
+  margin: 6px 0;
+  cursor: pointer;
+  padding: 7px 8px;
+  border-radius: 8px;
+  font-size: 12px;
 }
-.modal-body{
-  padding:14px 16px;
-  display:grid;
+.search-results p:hover { background: #f3f4f6; }
+
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  padding: 18px;
+}
+.modal {
+  width: min(760px, 100%);
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(17,24,39,.12);
+  box-shadow: 0 24px 70px rgba(0,0,0,.45);
+}
+.modalHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(17,24,39,.10);
+}
+.modalHead .t {
+  font-weight: 950;
+  color: #111827;
+  font-size: 14px;
+}
+.modalBody {
+  padding: 14px 16px;
+  display: grid;
   grid-template-columns: 1fr 1fr;
-  gap:10px 12px;
+  gap: 10px 12px;
 }
 @media (max-width: 860px){
-  .modal-body{ grid-template-columns: 1fr; }
+  .modalBody { grid-template-columns: 1fr; }
+  .tools { width: 340px; }
 }
-
-.field label{
-  display:block;
-  font-size:12px;
-  font-weight:900;
-  color:#111827;
-  margin-bottom:6px;
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 900;
+  color: #111827;
+  margin-bottom: 6px;
 }
-.field input, .field select{
-  width:100%;
-  padding:10px 10px;
-  border-radius:10px;
-  border:1px solid rgba(17,24,39,.12);
-  font-size:13px;
-  box-sizing:border-box;
-  background:#fff;
+.field input, .field textarea {
+  width: 100%;
+  border: 1px solid rgba(17,24,39,.16);
+  border-radius: 10px;
+  padding: 10px 10px;
+  font-size: 13px;
+  outline: none;
 }
-
-.modal-foot{
-  padding:12px 16px;
-  border-top:1px solid rgba(17,24,39,.10);
-  display:flex;
-  justify-content:space-between;
-  gap:10px;
-  align-items:center;
+.field textarea { min-height: 90px; resize: vertical; }
+.modalFoot {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(17,24,39,.10);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
 }
-.note{
-  font-size:11px;
-  color:var(--muted);
-  line-height:1.35;
+.modalFoot .note {
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.35;
   max-width: 520px;
 }
-
-/* TOAST */
-.toast{
-  position:fixed;
-  bottom:16px;
-  left:16px;
-  background:#111827;
-  color:#fff;
-  padding:10px 12px;
-  border-radius:10px;
-  font-size:12px;
-  font-weight:800;
-  opacity:0;
-  transform: translateY(10px);
-  transition: all .2s ease;
-  z-index:3000;
-  max-width: 720px;
-}
-.toast.show{
-  opacity:1;
-  transform: translateY(0);
-}
-
-/* Responsivo: empilha mapa + painel */
-@media (max-width: 980px){
-  body{ overflow:auto; }
-  .app{
-    position:relative;
-    inset:auto;
-    padding:12px;
-    display:grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 56vh auto;
-    gap:12px;
-  }
-  .map{ height:56vh; }
-  #map{ height:56vh; }
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(17,24,39,.12);
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 900;
+  background: #f9fafb;
+  color: #111827;
 }
 
 </style>
 </head>
 
 <body>
-<div class="app" id="app">
-<div id="map" class="map"></div>
+<div id="map"></div>
 
-<div class="card panel" id="sidePanel">
-  <div class="panel-head">
-    <div>
-      <div class="title">Alocação de Funcionários</div>
-      <div class="sub" id="selSub">Nenhum município selecionado</div>
-    </div>
-    <div style="display:flex; gap:8px; align-items:center;">
-      <button class="btn xs" id="btnZoomSP">Ver SP</button>
-      <button class="btn primary" id="btnAdd" disabled>Adicionar funcionário</button>
-    </div>
+<div class="loading" id="loading">
+<p style="font-weight:800; color:#111827;">Carregando mapa...</p>
+<p id="status" style="font-size: 12px; color: #666; margin-top: 10px;"></p>
+</div>
+
+<div class="header">
+<h1>São Paulo • Clientes e Cobertura por Região</h1>
+<p>
+1) Selecione o Campo de Região (ex.: NMMICRO / NMIMEDIAT).<br>
+2) Clique em um município para ver a Região (valor exato do campo).<br>
+3) Cadastre/edite clientes e clique em “Adicionar região do município selecionado”.
+</p>
+</div>
+
+<div class="tools">
+<h3>Regiões (GeoJSON)</h3>
+
+<div class="row">
+  <label>Campo de Região (properties do GeoJSON)</label>
+  <select id="regionFieldSelect"></select>
+  <div class="hint" id="regionFieldHint">Carregando campos...</div>
+</div>
+
+<div class="row" style="display:flex; align-items:center; gap:8px;">
+  <input id="chkColorByClientCoverage" type="checkbox" style="width:auto;" checked>
+  <label for="chkColorByClientCoverage" style="display:inline; margin:0; font-weight:900; color:#1e3a8a;">Colorir mapa por cobertura dos clientes</label>
+</div>
+
+<div class="row">
+  <div class="btns">
+    <button onclick="listarValoresUnicosRegiao()">Listar valores únicos</button>
+    <button class="secondary" onclick="limparSaidaRegioes()">Limpar</button>
   </div>
+</div>
 
-  <div class="panel-body">
-    <div class="section">
-      <div class="search">
-        <input class="input" id="searchInput" placeholder="Buscar município..." />
-        <button class="btn" id="btnClearSearch">Limpar</button>
-      </div>
+<div class="row">
+  <label>Valores únicos do campo de Região (para copiar/consultar)</label>
+  <textarea id="regionValuesOutput" placeholder="Clique em 'Listar valores únicos'..."></textarea>
+</div>
 
-      <div id="searchResults" class="list"></div>
+<div class="divider"></div>
 
-      <div style="height:10px"></div>
+<h3>Clientes (Cobertura)</h3>
 
-      <div class="kv">
-        <div>Município</div><div id="selNome">-</div>
-        <div>Código (IBGE)</div><div id="selCodigo">-</div>
-        <div>Região (auto)</div><div id="selRegiao">-</div>
-      </div>
+<div class="row">
+  <div class="btns">
+    <button onclick="openClientModalForAdd()">Adicionar cliente</button>
+    <button class="secondary" onclick="exportClientsJson()">Exportar JSON</button>
+  </div>
+</div>
 
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <span class="pill orange" id="pillSelected" style="display:none;">Selecionado</span>
-        <span class="pill green" id="pillHasActive" style="display:none;">Tem ativo</span>
-        <span class="pill red" id="pillOnlyInactive" style="display:none;">Só inativos</span>
-        <span class="pill gray" id="pillNone" style="display:none;">Sem alocação</span>
-      </div>
+<div class="row">
+  <div class="hint" id="clientsHint">
+    Dica: cadastre as regiões reais clicando nos municípios e usando “Adicionar região do município selecionado” no modal do cliente.
+  </div>
+</div>
 
-      <div style="height:10px"></div>
+<div class="row">
+  <div class="clientsList" id="clientsList"></div>
+</div>
 
-      <div class="note">
-        Dados de funcionários são salvos automaticamente neste dispositivo.
-      </div>
-    </div>
+</div>
 
-    <div class="divider"></div>
+<div class="info-box" id="infoBox">
+<div class="info-box-header">
+<button class="close-btn" onclick="fecharInfo()">×</button>
+<h2 id="municipioNome">Município</h2>
+<p id="municipioInfo">Clique em um município</p>
+</div>
+<div class="info-box-content">
+<div class="info-row"><span class="info-label">Código IBGE:</span> <span class="info-value" id="municipioCodigo">-</span></div>
+<div class="info-row"><span class="info-label">Campo de Região:</span> <span class="info-value" id="municipioRegionField">-</span></div>
+<div class="info-row"><span class="info-label">Região (valor exato):</span> <span class="info-value" id="municipioRegiaoSelecionada">-</span></div>
+<div class="info-row"><span class="info-label">Cliente responsável (se houver):</span> <span class="info-value" id="municipioCliente">-</span></div>
 
-    <div class="section">
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; margin-bottom:10px;">
-        <div>
-          <div class="title" style="font-size:13px;">Funcionários por Localidade</div>
-          <div class="sub" id="countSub">Carregando...</div>
-        </div>
-      </div>
-
-      <div id="allocList" class="list"></div>
-    </div>
+  <div class="button-group">
+    <button class="secondary" onclick="zoomSP()">Ver SP</button>
+    <button onclick="quickAddRegionToLastEditedClient()" id="btnQuickAddRegion" disabled>Adicionar região ao último cliente editado</button>
   </div>
 </div>
 
 </div>
 
-<div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+<div class="search-box">
+<input type="text" id="searchInput" placeholder="Buscar município..." onkeyup="buscarMunicipio()">
+</div>
+<div class="search-results" id="searchResults"></div>
+
+<div class="modalBackdrop" id="modalBackdrop">
 <div class="modal">
-<div class="modal-head">
-<div class="t" id="modalTitle">Adicionar funcionário</div>
-<button class="btn" id="btnCloseModal">Fechar</button>
+<div class="modalHead">
+<div class="t" id="modalTitle">Cliente</div>
+<div style="display:flex; gap:8px; align-items:center;">
+<button class="secondary" style="background:#4B5563;" onclick="closeClientModal()">Fechar</button>
+</div>
 </div>
 
-  <div class="modal-body">
+  <div class="modalBody">
     <div class="field">
-      <label>Nome</label>
-      <input id="fName" placeholder="Ex.: Ana Souza" />
-    </div>
-    <div class="field">
-      <label>Cargo</label>
-      <input id="fRole" placeholder="Ex.: Consultor(a) Regional" />
-    </div>
-
-    <div class="field">
-      <label>Status</label>
-      <select id="fStatus">
-        <option value="ACTIVE">ATIVO</option>
-        <option value="INACTIVE">INATIVO</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label>Tipo de alocação</label>
-      <select id="fType">
-        <option value="MUNICIPIO">Município selecionado</option>
-        <option value="REGIAO">Região (campo do GeoJSON)</option>
-      </select>
-    </div>
-
-    <div class="field" id="regionFieldWrap" style="display:none;">
-      <label>Campo de região</label>
-      <select id="fRegionField"></select>
-    </div>
-
-    <div class="field" id="regionValueWrap" style="display:none;">
-      <label>Valor da região</label>
-      <input id="fRegionValue" placeholder="Ex.: Registro / Campinas / ..." />
-    </div>
-
-    <div class="field">
-      <label>Alocação selecionada</label>
-      <input id="fTarget" disabled />
+      <label>Nome do Cliente</label>
+      <input id="fClientName" placeholder="Ex.: WAUX" />
     </div>
 
     <div class="field">
       <label>ID (opcional)</label>
-      <input id="fId" placeholder="Ex.: EMP012" />
+      <input id="fClientId" placeholder="Ex.: C-003" />
+    </div>
+
+    <div class="field">
+      <label>Cor do Cliente (usada no mapa)</label>
+      <input id="fClientColor" type="color" />
+    </div>
+
+    <div class="field">
+      <label>Total de regiões cadastradas</label>
+      <input id="fRegionsCount" disabled />
+    </div>
+
+    <div class="field" style="grid-column: 1 / -1;">
+      <label>Notas / Observações</label>
+      <textarea id="fClientNotes" placeholder="Ex.: Vale do Paraíba até RJ / ABCD etc."></textarea>
+    </div>
+
+    <div class="field" style="grid-column: 1 / -1;">
+      <label>Adicionar região (valor do campo selecionado)</label>
+      <div style="display:flex; gap:8px;">
+        <input id="fRegionToAdd" placeholder="Ex.: Guarulhos / Piracicaba / ..." list="regionsDatalist" />
+        <button onclick="addRegionFromInput()" style="width: 220px; background:#1e3a8a; color:#fff; border:none; border-radius:10px; font-weight:900; cursor:pointer;">Adicionar</button>
+      </div>
+      <datalist id="regionsDatalist"></datalist>
+      <div class="hint" style="margin-top:6px;">
+        Você pode: (1) digitar o valor, (2) escolher do autocomplete, ou (3) clicar num município e usar o botão abaixo.
+      </div>
+    </div>
+
+    <div class="field" style="grid-column: 1 / -1;">
+      <div style="display:flex; gap:8px;">
+        <button onclick="addRegionFromSelectedMunicipio()" id="btnAddSelectedRegion" style="background:#1e3a8a; color:#fff; border:none; border-radius:10px; padding:10px 12px; font-weight:900; cursor:pointer;" disabled>Adicionar região do município selecionado</button>
+        <button onclick="clearClientRegions()" class="danger" style="background:#b91c1c; color:#fff; border:none; border-radius:10px; padding:10px 12px; font-weight:900; cursor:pointer;">Limpar regiões</button>
+      </div>
+    </div>
+
+    <div class="field" style="grid-column: 1 / -1;">
+      <label>Regiões deste cliente (clique para remover)</label>
+      <div id="clientRegionsList" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
     </div>
   </div>
 
-  <div class="modal-foot">
+  <div class="modalFoot">
     <div class="note" id="modalNote">
-      O cadastro será salvo neste dispositivo.
+      Os dados são salvos no seu navegador (localStorage). Se trocar de computador/navegador, não aparece.
     </div>
     <div style="display:flex; gap:8px;">
-      <button class="btn danger" id="btnDelete" style="display:none;">Excluir</button>
-      <button class="btn primary" id="btnSave">Salvar</button>
+      <button class="danger" id="btnDeleteClient" onclick="deleteClient()" style="background:#b91c1c; color:#fff; border:none; border-radius:10px; padding:10px 12px; font-weight:900; cursor:pointer; display:none;">Excluir</button>
+      <button onclick="saveClient()" style="background:#1e3a8a; color:#fff; border:none; border-radius:10px; padding:10px 12px; font-weight:900; cursor:pointer;">Salvar</button>
     </div>
   </div>
 </div>
 
 </div>
-
-<div class="toast" id="toast"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const SP_URL = './sp.json';
-const MUNICIPIOS_URL = './sp_municipios_2024.geojson';
-const EMPREGADOS_URL = './employee_index.json';
+// =========================
+// CONFIG / STORAGE
+// =========================
 
-const STORAGE_KEY = 'sp_allocations_v1';
+const STORAGE_KEY = "sp_clients_coverage_v1";
 
-let FIELD_NOME = null;
-let FIELD_CODIGO = null;
+const ARQUIVOS_CONTORNO = ["sp.json", "sp", "SP.json", "SP"];
+const ARQUIVOS_MUNICIPIOS = [
+  "sp_municipios_2024.geojson",
+  "sp_municipios_2024.json",
+  "municipios.json",
+  "SP_Municipios_2023.geojson",
+  "SP_Municipios_2023.json",
+  "municipios.geojson"
+];
 
-const REGION_FIELD_CANDIDATES = ['NM_MICRO','NM_IMEDIAT','NM_REGIAO','REGIAO','MICRO','IMEDIAT','NM_MESO','NM_RGI','NM_RGI_IM'];
+const CORES_BASE = [
+  "#1e88e5", "#43a047", "#f4511e", "#8e24aa", "#00acc1",
+  "#fb8c00", "#3949ab", "#7cb342", "#e53935", "#6d4c41",
+  "#00897b", "#c0ca33", "#5e35b1", "#039be5", "#fdd835",
+  "#546e7a", "#d81b60", "#9e9d24", "#8d6e63", "#26a69a"
+];
 
-let municipiosGeo = null;
-let spOutlineLayer = null;
-let municipiosLayer = null;
+// DB local:
+// - regionField: qual campo do GeoJSON representa "Região" (ex.: NMMICRO)
+// - clients: [{ id, name, color, notes, regions: [regionValue, ...] }]
+let db = {
+  updatedAt: null,
+  regionField: null,
+  clients: []
+};
 
-let selectedCode = null;
+// =========================
+// MAP / DATA
+// =========================
+
+let mapa;
+let geoJsonLayer;
+let contournoLayer;
+
+let loadedFeatures = [];
+let todosOsMunicipios = {};
+
 let selectedFeature = null;
+let selectedLayer = null;
 
-let db = { updatedAt: null, employees: [] };
+// Index para performance e para pintar o mapa:
+// regionToClientName: Map<regionValue, clientName>
+// regionToClientColor: Map<regionValue, color>
+let regionToClientName = new Map();
+let regionToClientColor = new Map();
 
-let codeToFeature = new Map();
-let nameIndex = [];
-let regionIndex = new Map();
-let muniStats = new Map();
+let lastEditedClientId = null;
 
-const $ = (id) => document.getElementById(id);
+// =========================
+// ELEMENTS
+// =========================
 
-const btnAdd = $('btnAdd');
-const searchInput = $('searchInput');
-const searchResults = $('searchResults');
-const btnClearSearch = $('btnClearSearch');
+const regionFieldSelect = document.getElementById("regionFieldSelect");
+const regionFieldHint = document.getElementById("regionFieldHint");
+const chkColorByClientCoverage = document.getElementById("chkColorByClientCoverage");
+const regionValuesOutput = document.getElementById("regionValuesOutput");
 
-const selSub = $('selSub');
-const selNome = $('selNome');
-const selCodigo = $('selCodigo');
-const selRegiao = $('selRegiao');
+const clientsList = document.getElementById("clientsList");
+const clientsHint = document.getElementById("clientsHint");
 
-const pillSelected = $('pillSelected');
-const pillHasActive = $('pillHasActive');
-const pillOnlyInactive = $('pillOnlyInactive');
-const pillNone = $('pillNone');
+const infoBox = document.getElementById("infoBox");
+const municipioNome = document.getElementById("municipioNome");
+const municipioInfo = document.getElementById("municipioInfo");
+const municipioCodigo = document.getElementById("municipioCodigo");
+const municipioRegionField = document.getElementById("municipioRegionField");
+const municipioRegiaoSelecionada = document.getElementById("municipioRegiaoSelecionada");
+const municipioCliente = document.getElementById("municipioCliente");
+const btnQuickAddRegion = document.getElementById("btnQuickAddRegion");
 
-const allocList = $('allocList');
-const countSub = $('countSub');
+const modalBackdrop = document.getElementById("modalBackdrop");
+const modalTitle = document.getElementById("modalTitle");
+const btnDeleteClient = document.getElementById("btnDeleteClient");
 
-const btnZoomSP = $('btnZoomSP');
+const fClientName = document.getElementById("fClientName");
+const fClientId = document.getElementById("fClientId");
+const fClientColor = document.getElementById("fClientColor");
+const fClientNotes = document.getElementById("fClientNotes");
+const fRegionsCount = document.getElementById("fRegionsCount");
+const fRegionToAdd = document.getElementById("fRegionToAdd");
+const regionsDatalist = document.getElementById("regionsDatalist");
+const btnAddSelectedRegion = document.getElementById("btnAddSelectedRegion");
+const clientRegionsList = document.getElementById("clientRegionsList");
 
-const modalBackdrop = $('modalBackdrop');
-const btnCloseModal = $('btnCloseModal');
-const btnSave = $('btnSave');
-const btnDelete = $('btnDelete');
-const modalTitle = $('modalTitle');
+// estado do modal
+let editingClientIndex = null;
 
-const fName = $('fName');
-const fRole = $('fRole');
-const fStatus = $('fStatus');
-const fType = $('fType');
-const fRegionField = $('fRegionField');
-const fRegionValue = $('fRegionValue');
-const fTarget = $('fTarget');
-const fId = $('fId');
+// =========================
+// HELPERS
+// =========================
 
-const regionFieldWrap = $('regionFieldWrap');
-const regionValueWrap = $('regionValueWrap');
+function nowIso(){ return new Date().toISOString(); }
 
-const toast = $('toast');
-
-let editingEmployeeInternalId = null;
-
-function showToast(msg){
-  toast.textContent = msg;
-  toast.classList.add('show');
-  clearTimeout(showToast._t);
-  toast._t = setTimeout(() => toast.classList.remove('show'), 2200);
-}
-
-function normalize(str){
-  return String(str || '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase().trim();
-}
-
-function nowIso(){
-  return new Date().toISOString();
+function atualizarStatus(msg) {
+  const el = document.getElementById("status");
+  if (el) el.textContent = msg;
+  console.log(msg);
 }
 
 function safeStr(v){
-  if (v === null || v === undefined) return '';
+  if (v === null || v === undefined) return "";
   return String(v);
 }
 
-function detectFields(geo){
-  const f = geo.features?.[0];
-  const props = f?.properties || {};
-  const keys = Object.keys(props);
-
-  FIELD_NOME =
-    keys.find(k => /NM.*MUN/i.test(k)) ||
-    keys.find(k => /NOME/i.test(k)) ||
-    'NM_MUN';
-
-  FIELD_CODIGO =
-    keys.find(k => /(CD|COD).*MUN/i.test(k)) ||
-    keys.find(k => /IBGE/i.test(k)) ||
-    'CD_MUN';
-
-  console.log('Campos detectados no GeoJSON:');
-  console.log('  FIELD_NOME  =', FIELD_NOME);
-  console.log('  FIELD_CODIGO=', FIELD_CODIGO);
-
-  return { keys };
+function removerAcentos(texto) {
+  return String(texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
-function getNome(props){
-  return safeStr(props?.[FIELD_NOME]) || 'Município';
+function guessNameField(props) {
+  const keys = Object.keys(props || {});
+  return keys.find(k => /NMMUN|NM_MUN|NOME/i.test(k)) || "NMMUN";
 }
 
-function getCodigo(props){
-  return safeStr(props?.[FIELD_CODIGO]).trim();
+function guessCodeField(props) {
+  const keys = Object.keys(props || {});
+  return keys.find(k => /CDMUN|CD_MUN|IBGE|COD/i.test(k)) || "CDMUN";
 }
 
-function buildIndexes(){
-  codeToFeature = new Map();
-  nameIndex = [];
-  regionIndex = new Map();
-
-  const { keys } = detectFields(municipiosGeo);
-
-  const availableRegionFields = REGION_FIELD_CANDIDATES.filter(c => keys.includes(c));
-  for (const rf of availableRegionFields){
-    regionIndex.set(rf, new Map());
-  }
-
-  for (const ft of municipiosGeo.features || []){
-    const code = getCodigo(ft.properties);
-    const name = getNome(ft.properties);
-    if (!code) continue;
-
-    codeToFeature.set(code, ft);
-    nameIndex.push({ nameKey: normalize(name), name, code });
-
-    for (const rf of availableRegionFields){
-      const val = safeStr(ft.properties?.[rf]).trim();
-      if (!val) continue;
-      const byValue = regionIndex.get(rf);
-      if (!byValue.has(val)) byValue.set(val, new Set());
-      byValue.get(val).add(code);
-    }
-  }
-
-  fRegionField.innerHTML = '';
-  if (availableRegionFields.length){
-    for (const rf of availableRegionFields){
-      const opt = document.createElement('option');
-      opt.value = rf;
-      opt.textContent = rf;
-      fRegionField.appendChild(opt);
-    }
-  } else {
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = 'Nenhum campo de região encontrado';
-    fRegionField.appendChild(opt);
-  }
+function getSelectedRegionValue(){
+  if (!selectedFeature) return "";
+  const props = selectedFeature.properties || {};
+  if (!db.regionField) return "";
+  return safeStr(props[db.regionField]).trim();
 }
 
-function loadDbFromLocalStorage(){
+function gerarCorDeterministicaByIndex(i){
+  const hue = (i * 137.508) % 360;
+  return `hsl(${hue}, 70%, 48%)`;
+}
+
+function generateClientColor(){
+  // cor padrão para novos clientes (não garante unicidade perfeita, mas ajuda)
+  const i = db.clients.length;
+  return (i < CORES_BASE.length) ? CORES_BASE[i] : gerarCorDeterministicaByIndex(i);
+}
+
+// =========================
+// STORAGE
+// =========================
+
+function loadDb(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
     const parsed = JSON.parse(raw);
-    if (!parsed || !Array.isArray(parsed.employees)) return false;
+    if (!parsed || !Array.isArray(parsed.clients)) return false;
     db = parsed;
     return true;
   }catch(e){
@@ -642,580 +671,873 @@ function loadDbFromLocalStorage(){
   }
 }
 
-function saveDbToLocalStorage(){
+function saveDb(){
   db.updatedAt = nowIso();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
 }
 
-async function tryLoadInitialEmployeeIndex(){
-  try{
-    const r = await fetch(EMPREGADOS_URL, { cache:'no-store' });
-    if (!r.ok) return false;
-    const j = await r.json();
-    if (!j || !Array.isArray(j.employees)) return false;
+function seedInitialClientsIfEmpty(){
+  if (db.clients.length) return;
 
-    if (!db.employees.length){
-      db = {
-        updatedAt: j.updatedAt || nowIso(),
-        employees: j.employees.map(x => ({
-          id: x.employeeId || x.id || '',
-          name: x.employeeName || x.name || '',
-          role: x.role || x.cargo || '',
-          status: (x.status || 'ACTIVE').toUpperCase(),
-          assignment: x.assignment || (
-            x.municipalityCode ? { type:'MUNICIPIO', code: String(x.municipalityCode) } :
-            (x.regionField && x.regionValue ? { type:'REGIAO', field: x.regionField, value: x.regionValue } : null)
-          )
-        })).filter(e => e.assignment && e.name)
-      };
-      saveDbToLocalStorage();
-      showToast('Dados iniciais carregados de employee_index.json');
-    }
-    return true;
-  }catch(e){
-    return false;
-  }
+  // Seed inicial com os clientes que você informou.
+  // As regiões reais devem ser adicionadas depois clicando nos municípios (porque dependem do campo do GeoJSON).
+  db.clients = [
+    { id:"", name:"CDO", color: generateClientColor(), notes:"De Jacareí pra frente até o Rio de Janeiro (todo o Vale do Paraíba). Adicione as regiões clicando nos municípios do Vale.", regions: [] },
+    { id:"", name:"SUPPORTE", color: generateClientColor(), notes:"ABCD (Santo André, São Bernardo, São Caetano, Diadema). Adicione as regiões clicando nesses municípios.", regions: [] },
+    { id:"", name:"WAUX", color: generateClientColor(), notes:"Região de Guarulhos (adicione clicando em Guarulhos).", regions: [] },
+    { id:"", name:"MONTEBELLO", color: generateClientColor(), notes:"Região de Piracicaba (adicione clicando em Piracicaba).", regions: [] },
+    { id:"", name:"HIRATA", color: generateClientColor(), notes:"Região de São José do Rio Preto (adicione clicando em São José do Rio Preto).", regions: [] }
+  ];
+
+  saveDb();
 }
 
-function expandAssignmentToCodes(assignment){
-  if (!assignment) return [];
-  if (assignment.type === 'MUNICIPIO'){
-    const code = String(assignment.code || '').trim();
-    return code ? [code] : [];
-  }
-  if (assignment.type === 'REGIAO'){
-    const field = assignment.field;
-    const value = assignment.value;
-    const byField = regionIndex.get(field);
-    if (!byField) return [];
-    const set = byField.get(value);
-    return set ? Array.from(set) : [];
-  }
-  return [];
-}
+// =========================
+// COLOR-CODING (COBERTURA)
+// =========================
+/*
+  COMO A COLORAÇÃO DO MAPA FUNCIONA (IMPLEMENTAÇÃO):
 
-function rebuildStats(){
-  muniStats = new Map();
+  - Você escolhe um "Campo de Região" (db.regionField). Ex.: NMMICRO.
+  - Para cada município (feature), obtemos o valor: regionValue = feature.properties[db.regionField].
+  - Cada cliente possui uma lista regions[] contendo valores EXATOS desse campo.
+    Ex.: se db.regionField = "NMMICRO" e Guarulhos tem NMMICRO = "Guarulhos",
+         então a região "Guarulhos" deve estar dentro de client.regions[].
 
-  function ensure(code){
-    if (!muniStats.has(code)){
-      muniStats.set(code, { activeCount:0, totalCount:0, employees:[] });
-    }
-    return muniStats.get(code);
-  }
+  - Construímos dois mapas:
+    regionToClientColor: Map<regionValue, color>
+    regionToClientName:  Map<regionValue, clientName>
 
-  for (const emp of db.employees){
-    const st = (emp.status || 'ACTIVE').toUpperCase();
-    const codes = expandAssignmentToCodes(emp.assignment);
-    for (const code of codes){
-      const entry = ensure(code);
-      entry.totalCount += 1;
-      if (st === 'ACTIVE') entry.activeCount += 1;
-      entry.employees.push(emp);
+  - Na função getStyle(feature):
+    - se o município tem regionValue e existe regionToClientColor.get(regionValue),
+      então fillColor = a cor do cliente responsável.
+    - caso contrário, o município fica cinza (sem cobertura).
+
+  Regra de conflito:
+  - Este código tenta impedir que a mesma regionValue seja atribuída a mais de 1 cliente.
+    Se acontecer, ele mantém a primeira e avisa via alert/console.
+*/
+
+function rebuildCoverageIndex(){
+  regionToClientColor = new Map();
+  regionToClientName = new Map();
+
+  const conflicts = [];
+
+  for (const c of db.clients){
+    const color = c.color || "#9ca3af";
+    const name = c.name || "(sem nome)";
+    const regs = Array.isArray(c.regions) ? c.regions : [];
+
+    for (const rv of regs){
+      const regionValue = String(rv || "").trim();
+      if (!regionValue) continue;
+
+      if (regionToClientName.has(regionValue) && regionToClientName.get(regionValue) !== name){
+        conflicts.push({ regionValue, a: regionToClientName.get(regionValue), b: name });
+        continue;
+      }
+      regionToClientName.set(regionValue, name);
+      regionToClientColor.set(regionValue, color);
     }
   }
-}
 
-function getMunicipioRegionSummary(props){
-  for (const rf of REGION_FIELD_CANDIDATES){
-    const v = props?.[rf];
-    if (v) return `${rf}: ${v}`;
+  if (conflicts.length){
+    console.warn("Conflitos: mesma região atribuída a múltiplos clientes:", conflicts);
   }
-  return '-';
 }
 
-function fillColorForCode(code){
-  const entry = muniStats.get(code);
-  if (!entry) return getComputedStyle(document.documentElement).getPropertyValue('--c-none').trim();
-  if (entry.activeCount > 0) return getComputedStyle(document.documentElement).getPropertyValue('--c-active').trim();
-  return getComputedStyle(document.documentElement).getPropertyValue('--c-inactive').trim();
+// =========================
+// GEOJSON / REGIÕES
+// =========================
+
+async function tentarCarregar(nomes) {
+  for (let nome of nomes) {
+    try {
+      atualizarStatus(`Tentando: ${nome}...`);
+      const response = await fetch(nome);
+      if (response.ok) {
+        atualizarStatus(`Encontrado: ${nome}`);
+        return await response.json();
+      }
+    } catch (e) {
+      console.log(`Tentativa falhou: ${nome}`);
+    }
+  }
+  return null;
 }
 
-function styleMunicipio(feature){
-  const code = getCodigo(feature.properties);
-  const baseFill = fillColorForCode(code);
-  const isSelected = selectedCode && code === selectedCode;
+function preencherSelectCamposRegiao(keys) {
+  const candidates = keys.filter(k => /MICRO|MESO|IMEDI|REG|RGI/i.test(k));
 
-  return {
-    color: isSelected ? getComputedStyle(document.documentElement).getPropertyValue('--c-selected').trim() : '#ffffff',
-    weight: isSelected ? 3 : 0.8,
-    opacity: 1,
-    fillColor: baseFill,
-    fillOpacity: isSelected ? 0.28 : 0.72
+  regionFieldSelect.innerHTML = "";
+
+  const opt0 = document.createElement("option");
+  opt0.value = "";
+  opt0.textContent = "— selecione —";
+  regionFieldSelect.appendChild(opt0);
+
+  const list = candidates.length ? candidates : keys;
+  for (const k of list) {
+    const opt = document.createElement("option");
+    opt.value = k;
+    opt.textContent = k;
+    regionFieldSelect.appendChild(opt);
+  }
+
+  regionFieldHint.textContent =
+    candidates.length
+      ? "Sugestão: comece pelos campos contendo MICRO / MESO / IMEDI / REG / RGI."
+      : "Nenhum candidato óbvio encontrado; selecione qualquer campo para testar.";
+
+  // tenta auto-selecionar
+  const prefer = ["NMMICRO", "NM_MICRO", "NMIMEDIAT", "NM_IMEDIAT", "REGIAO", "NM_REGIAO", "NM_RGI"];
+  const found = prefer.find(p => keys.includes(p));
+  if (found && !db.regionField){
+    db.regionField = found;
+    saveDb();
+  }
+  if (db.regionField){
+    regionFieldSelect.value = db.regionField;
+  }
+}
+
+function fillRegionsDatalist(){
+  regionsDatalist.innerHTML = "";
+  if (!db.regionField || !loadedFeatures.length) return;
+
+  const set = new Set();
+  for (const ft of loadedFeatures){
+    const v = safeStr(ft.properties?.[db.regionField]).trim();
+    if (v) set.add(v);
+  }
+  const values = Array.from(set).sort((a,b)=>a.localeCompare(b,"pt-BR")).slice(0, 2000);
+
+  for (const v of values){
+    const opt = document.createElement("option");
+    opt.value = v;
+    regionsDatalist.appendChild(opt);
+  }
+}
+
+function listarValoresUnicosRegiao() {
+  if (!db.regionField) {
+    alert("Selecione um Campo de Região primeiro.");
+    return;
+  }
+  if (!loadedFeatures.length) {
+    alert("Ainda não carregou as features.");
+    return;
+  }
+
+  const set = new Set();
+  for (const ft of loadedFeatures) {
+    const v = safeStr(ft.properties?.[db.regionField]).trim();
+    if (v) set.add(v);
+  }
+
+  const values = Array.from(set).sort((a,b) => a.localeCompare(b, "pt-BR"));
+  const payload = {
+    regionField: db.regionField,
+    totalUniqueValues: values.length,
+    values
   };
+
+  regionValuesOutput.value = JSON.stringify(payload, null, 2);
+  console.log("Valores únicos do campo de região:", payload);
 }
 
-function highlightFeature(e){
+function limparSaidaRegioes() {
+  regionValuesOutput.value = "";
+}
+
+// =========================
+// MAP STYLING / INTERAÇÃO
+// =========================
+
+function getStyle(feature) {
+  const props = feature.properties || {};
+  const baseStroke = "#ffffff";
+
+  if (!chkColorByClientCoverage.checked || !db.regionField){
+    return { fillColor: "#9ca3af", weight: 1.2, opacity: 1, color: baseStroke, fillOpacity: 0.35 };
+  }
+
+  const regionValue = safeStr(props[db.regionField]).trim();
+  const c = regionToClientColor.get(regionValue);
+
+  if (c){
+    return { fillColor: c, weight: 1.4, opacity: 1, color: baseStroke, fillOpacity: 0.82 };
+  }
+  return { fillColor: "#e5e7eb", weight: 1.0, opacity: 1, color: baseStroke, fillOpacity: 0.55 };
+}
+
+function highlightFeature(e) {
   const layer = e.target;
-  layer.setStyle({ weight: 2.2, color:'#111827', fillOpacity: 0.82 });
+  layer.setStyle({ weight: 3, color: "#111827", fillOpacity: 1 });
   layer.bringToFront();
 }
 
-function resetHighlight(e){
-  if (municipiosLayer) municipiosLayer.resetStyle(e.target);
-}
+function resetHighlight(e) {
+  if (geoJsonLayer) geoJsonLayer.resetStyle(e.target);
 
-function selectMunicipioByFeature(feature, layer){
-  selectedFeature = feature;
-  selectedCode = getCodigo(feature.properties);
-
-  btnAdd.disabled = !selectedCode;
-
-  const name = getNome(feature.properties);
-  selSub.textContent = `Selecionado: ${name}`;
-  selNome.textContent = name;
-  selCodigo.textContent = selectedCode || '-';
-  selRegiao.textContent = getMunicipioRegionSummary(feature.properties);
-
-  pillSelected.style.display = selectedCode ? 'inline-flex' : 'none';
-
-  const entry = muniStats.get(selectedCode);
-  pillHasActive.style.display = (entry && entry.activeCount > 0) ? 'inline-flex' : 'none';
-  pillOnlyInactive.style.display = (entry && entry.totalCount > 0 && entry.activeCount === 0) ? 'inline-flex' : 'none';
-  pillNone.style.display = (!entry) ? 'inline-flex' : 'none';
-
-  if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
-
-  if (layer){
-    const bounds = layer.getBounds();
-    map.fitBounds(bounds, { padding:[40,40], maxZoom: 11, animate:true, duration:0.6 });
+  // mantém seleção com borda laranja (se existir)
+  if (selectedLayer && geoJsonLayer){
+    selectedLayer.setStyle({ color: "#ff6f00", weight: 3 });
   }
-
-  renderAllocationsPanel();
 }
 
-function onMunicipioClick(e){
+function selectFeature(layer){
+  selectedLayer = layer;
+  selectedFeature = layer.feature;
+
+  // aplica estilo de seleção
+  if (geoJsonLayer){
+    geoJsonLayer.eachLayer(l => geoJsonLayer.resetStyle(l));
+  }
+  layer.setStyle({ color: "#ff6f00", weight: 3 });
+  layer.bringToFront();
+
+  mostrarInfoMunicipio(selectedFeature.properties || {});
+  infoBox.style.display = "block";
+
+  // habilita botões relacionados a "região selecionada"
+  const rv = getSelectedRegionValue();
+  btnAddSelectedRegion.disabled = !(rv && db.regionField && editingClientIndex !== null);
+  btnQuickAddRegion.disabled = !(rv && db.regionField && lastEditedClientId);
+}
+
+function onFeatureClick(e) {
   const layer = e.target;
-  const feature = layer.feature;
-  selectMunicipioByFeature(feature, layer);
+  selectFeature(layer);
+
+  // zoom leve para ajudar (sem "sumir com o mapa inteiro")
+  try{
+    const bounds = layer.getBounds();
+    mapa.fitBounds(bounds, { padding: [30, 30], maxZoom: 11, animate: true, duration: 0.5 });
+  }catch(err){}
 }
 
-function renderSearchResults(items){
-  searchResults.innerHTML = '';
+function onEachFeature(feature, layer) {
+  const props = feature.properties || {};
+  const nameField = guessNameField(props);
+  const nomeMun = props[nameField] || props.NMMUN || "Desconhecido";
+  todosOsMunicipios[nomeMun] = props;
 
-  if (!items.length){
-    const div = document.createElement('div');
-    div.className = 'muted';
-    div.style.fontSize = '12px';
-    div.textContent = 'Sem resultados.';
-    searchResults.appendChild(div);
+  layer.on({
+    mouseover: highlightFeature,
+    mouseout: resetHighlight,
+    click: onFeatureClick
+  });
+}
+
+function mostrarInfoMunicipio(props) {
+  const nameField = guessNameField(props);
+  const codeField = guessCodeField(props);
+
+  const nome = props[nameField] || props.NMMUN || "Desconhecido";
+  const codigo = props[codeField] || props.CDMUN || "-";
+
+  const rf = db.regionField || "-";
+  const rv = (db.regionField ? safeStr(props[db.regionField]).trim() : "") || "-";
+
+  const client = rv !== "-" ? (regionToClientName.get(rv) || "-") : "-";
+
+  municipioNome.textContent = nome;
+  municipioCodigo.textContent = codigo;
+  municipioRegionField.textContent = rf;
+  municipioRegiaoSelecionada.textContent = rv;
+  municipioCliente.textContent = client;
+
+  municipioInfo.textContent = `Clique no modal do cliente e adicione esta região para mapear a cobertura.`;
+}
+
+function fecharInfo(){
+  infoBox.style.display = "none";
+}
+
+function zoomSP(){
+  if (geoJsonLayer){
+    mapa.fitBounds(geoJsonLayer.getBounds(), { padding: [25,25] });
+  }
+}
+
+// =========================
+// BUSCA
+// =========================
+
+function buscarMunicipio() {
+  const termoInput = document.getElementById("searchInput").value;
+  const termo = removerAcentos(termoInput);
+  const resultados = document.getElementById("searchResults");
+
+  if (termo.length < 2) {
+    resultados.style.display = "none";
     return;
   }
 
-  for (const it of items.slice(0, 25)){
-    const div = document.createElement('div');
-    div.className = 'item';
-    div.innerHTML = `
-      <div class="row">
-        <div>
-          <div class="name">${it.name}</div>
-          <div class="meta">Código: ${it.code}</div>
-        </div>
-        <div class="actions">
-          <span class="link">Ver</span>
-        </div>
-      </div>
-    `;
-    div.querySelector('.link').onclick = () => {
-      const ft = codeToFeature.get(it.code);
-      if (!ft) return;
+  const matches = Object.entries(todosOsMunicipios)
+    .filter(([nome, props]) => removerAcentos(nome).includes(termo))
+    .slice(0, 10);
 
-      let foundLayer = null;
-      municipiosLayer.eachLayer(l => {
-        if (getCodigo(l.feature.properties) === it.code) foundLayer = l;
-      });
-      selectMunicipioByFeature(ft, foundLayer);
-    };
-    searchResults.appendChild(div);
+  if (matches.length === 0) {
+    resultados.style.display = "none";
+    return;
   }
+
+  resultados.innerHTML = matches
+    .map(([nome, props]) => {
+      const propsString = JSON.stringify(props).replace(/"/g, "&quot;");
+      return `<p onclick="procurarEFocarMunicipio('${nome}', ${propsString})">${nome}</p>`;
+    })
+    .join("");
+
+  resultados.style.display = "block";
 }
 
-function groupEmployeesByLocality(){
-  const groups = new Map();
+function procurarEFocarMunicipio(nome, props) {
+  document.getElementById("searchInput").value = nome;
+  document.getElementById("searchResults").style.display = "none";
 
-  for (const emp of db.employees){
-    const a = emp.assignment;
-    if (!a) continue;
-
-    let key = '';
-    let title = '';
-    let subtitle = '';
-
-    if (a.type === 'MUNICIPIO'){
-      const code = String(a.code || '').trim();
-      const ft = codeToFeature.get(code);
-      const name = ft ? getNome(ft.properties) : '(município)';
-      key = `MUNI:${code}`;
-      title = name;
-      subtitle = `Município | Código ${code}`;
-    } else if (a.type === 'REGIAO'){
-      key = `REG:${a.field}:${a.value}`;
-      title = a.value;
-      subtitle = `Região | Campo ${a.field}`;
-    } else continue;
-
-    if (!groups.has(key)){
-      groups.set(key, { key, title, subtitle, employees: [] });
+  // encontra o layer no mapa para poder selecionar
+  if (geoJsonLayer){
+    let found = null;
+    geoJsonLayer.eachLayer(layer => {
+      const p = layer.feature?.properties || {};
+      const nameField = guessNameField(p);
+      if ((p[nameField] || p.NMMUN) === nome){
+        found = layer;
+      }
+    });
+    if (found){
+      selectFeature(found);
+    } else {
+      // fallback: só mostra info sem layer
+      selectedFeature = { properties: props };
+      selectedLayer = null;
+      mostrarInfoMunicipio(props);
+      infoBox.style.display = "block";
     }
-    groups.get(key).employees.push(emp);
   }
-
-  return Array.from(groups.values()).sort((a,b) => a.title.localeCompare(b.title, 'pt-BR'));
 }
 
-function renderAllocationsPanel(){
-  const totalEmployees = db.employees.length;
-  countSub.textContent = `${totalEmployees} funcionário(s) • Atualizado: ${db.updatedAt ? new Date(db.updatedAt).toLocaleString() : '-'}`;
+// =========================
+// CLIENTS UI + CRUD
+// =========================
 
-  const groups = groupEmployeesByLocality();
+function renderClients(){
+  clientsList.innerHTML = "";
 
-  allocList.innerHTML = '';
-  if (!groups.length){
-    allocList.innerHTML = `<div class="muted" style="font-size:12px;">Nenhuma alocação cadastrada. Selecione um município e clique em "Adicionar funcionário".</div>`;
-    return;
-  }
+  const rf = db.regionField ? db.regionField : "(campo não definido)";
+  const totalRegions = db.clients.reduce((acc, c) => acc + (Array.isArray(c.regions) ? c.regions.length : 0), 0);
 
-  for (const g of groups){
-    const wrap = document.createElement('div');
-    wrap.className = 'item';
+  clientsHint.textContent =
+    `${db.clients.length} cliente(s) • ${totalRegions} região(ões) cadastrada(s) • Campo: ${rf} • Atualizado: ${db.updatedAt ? new Date(db.updatedAt).toLocaleString() : "-"}`;
 
-    const sorted = g.employees.slice().sort((a,b) => a.name.localeCompare(b.name,'pt-BR'));
+  const sorted = db.clients.slice().sort((a,b)=>String(a.name||"").localeCompare(String(b.name||""),"pt-BR"));
 
-    const employeeLines = sorted.map((e, idx) => {
-      const pill = e.status === 'ACTIVE' ? '<span class="pill green">ATIVO</span>' : '<span class="pill red">INATIVO</span>';
-      const role = e.role ? e.role : '';
-      const id = e.id ? ` (${e.id})` : '';
-      return `
-        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; padding:8px 0; border-top:${idx===0?'none':'1px solid rgba(17,24,39,.08)'};">
-          <div>
-            <div style="font-weight:950; color:#111827; font-size:13px;">${e.name}${id}</div>
-            <div class="meta">${role ? role : '<span class="muted">Cargo não informado</span>'}</div>
-          </div>
-          <div style="display:flex; gap:8px; align-items:center;">
-            ${pill}
-            <span class="link" data-edit="${g.key}::${idx}">Editar</span>
-          </div>
-        </div>
-      `;
-    }).join('');
+  for (const c of sorted){
+    const wrap = document.createElement("div");
+    wrap.className = "clientItem";
+
+    const regionsCount = Array.isArray(c.regions) ? c.regions.length : 0;
+    const notes = c.notes ? c.notes : "";
+    const id = c.id ? ` (${c.id})` : "";
 
     wrap.innerHTML = `
-      <div class="row">
+      <div class="clientItemTop">
         <div>
-          <div class="name">${g.title}</div>
-          <div class="meta">${g.subtitle} • ${g.employees.length} funcionário(s)</div>
+          <div class="clientName">
+            <span class="swatch" style="background:${c.color || "#9ca3af"};"></span>
+            <span>${c.name || "(sem nome)"}${id}</span>
+            <span class="badge">${regionsCount} região(ões)</span>
+          </div>
+          <div class="clientMeta">${notes ? notes : "<span style='color:#9ca3af; font-weight:700;'>Sem notas</span>"}</div>
         </div>
-        <div class="actions">
-          <span class="link" data-focus="${g.key}">Focar</span>
+        <div class="clientActions">
+          <span class="link" data-focus="${encodeURIComponent(c.name)}">Focar</span>
+          <span class="link" data-edit="${encodeURIComponent(c.name)}">Editar</span>
         </div>
-      </div>
-      <div style="margin-top:6px;">
-        ${employeeLines}
       </div>
     `;
 
-    wrap.querySelector('[data-focus]').onclick = () => {
-      const key = g.key;
-      if (key.startsWith('MUNI:')){
-        const code = key.split(':')[1];
-        const ft = codeToFeature.get(code);
-        if (!ft) return;
-        let foundLayer = null;
-        municipiosLayer.eachLayer(l => {
-          if (getCodigo(l.feature.properties) === code) foundLayer = l;
-        });
-        selectMunicipioByFeature(ft, foundLayer);
-        return;
-      }
-
-      if (key.startsWith('REG:')){
-        const parts = key.split(':');
-        const field = parts[1];
-        const value = parts.slice(2).join(':');
-        const codes = expandAssignmentToCodes({ type:'REGIAO', field, value });
-        if (!codes.length) return;
-
-        const layers = [];
-        municipiosLayer.eachLayer(l => {
-          const c = getCodigo(l.feature.properties);
-          if (codes.includes(c)) layers.push(l);
-        });
-
-        if (layers.length){
-          const groupLayer = L.featureGroup(layers);
-          map.fitBounds(groupLayer.getBounds(), { padding:[40,40], maxZoom: 10, animate:true, duration:0.6 });
-          showToast(`Foco na região: ${value}`);
-        } else {
-          showToast('Não foi possível focar: sem camadas encontradas.');
-        }
-      }
+    wrap.querySelector("[data-edit]").onclick = () => {
+      const idx = db.clients.findIndex(x => x === c);
+      openClientModalForEdit(idx);
     };
 
-    const editLinks = wrap.querySelectorAll('[data-edit]');
-    editLinks.forEach((lnk) => {
-      lnk.onclick = () => {
-        const token = lnk.getAttribute('data-edit');
-        const [gkey, idxStr] = token.split('::');
-        const idx = Number(idxStr);
+    wrap.querySelector("[data-focus]").onclick = () => focusClientCoverage(c);
 
-        const groupsNow = groupEmployeesByLocality();
-        const group = groupsNow.find(x => x.key === gkey);
-        if (!group) return;
-
-        const emp = group.employees.slice().sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'))[idx];
-        if (!emp) return;
-
-        const globalIndex = db.employees.indexOf(emp);
-        if (globalIndex < 0) return;
-
-        openModalForEdit(globalIndex);
-      };
-    });
-
-    allocList.appendChild(wrap);
+    clientsList.appendChild(wrap);
   }
+}
+
+function openClientModalForAdd(){
+  editingClientIndex = null;
+  modalTitle.textContent = "Adicionar cliente";
+  btnDeleteClient.style.display = "none";
+
+  fClientName.value = "";
+  fClientId.value = "";
+  fClientNotes.value = "";
+  fClientColor.value = "#1e88e5"; // default
+  fRegionToAdd.value = "";
+
+  // sugere uma cor “livre” baseada na ordem atual
+  fClientColor.value = generateClientColor();
+
+  updateClientRegionsUI([]);
+  showModal(true);
+
+  lastEditedClientId = null;
+}
+
+function openClientModalForEdit(idx){
+  const c = db.clients[idx];
+  if (!c) return;
+
+  editingClientIndex = idx;
+  modalTitle.textContent = "Editar cliente";
+  btnDeleteClient.style.display = "inline-block";
+
+  fClientName.value = c.name || "";
+  fClientId.value = c.id || "";
+  fClientNotes.value = c.notes || "";
+  fClientColor.value = c.color || "#9ca3af";
+  fRegionToAdd.value = "";
+
+  updateClientRegionsUI(Array.isArray(c.regions) ? c.regions : []);
+  showModal(true);
+
+  lastEditedClientId = c.id || c.name || null;
+
+  // habilita botão se já houver município selecionado
+  const rv = getSelectedRegionValue();
+  btnAddSelectedRegion.disabled = !(rv && db.regionField);
 }
 
 function showModal(open){
-  modalBackdrop.style.display = open ? 'flex' : 'none';
+  modalBackdrop.style.display = open ? "flex" : "none";
 }
 
-function syncTypeFields(){
-  const type = fType.value;
-
-  if (type === 'REGIAO'){
-    regionFieldWrap.style.display = '';
-    regionValueWrap.style.display = '';
-
-    const field = fRegionField.value;
-    const v = selectedFeature?.properties?.[field];
-    if (v && !fRegionValue.value){
-      fRegionValue.value = String(v);
-    }
-    const showField = fRegionField.value || '(campo)';
-    const showValue = fRegionValue.value || '(valor)';
-    fTarget.value = `Região: ${showValue} (${showField})`;
-  } else {
-    regionFieldWrap.style.display = 'none';
-    regionValueWrap.style.display = 'none';
-
-    const nome = selectedFeature ? getNome(selectedFeature.properties) : '-';
-    const code = selectedCode || '-';
-    fTarget.value = `${nome} (${code})`;
-  }
-}
-
-function openModalForAdd(){
-  if (!selectedFeature || !selectedCode) return;
-
-  editingEmployeeInternalId = null;
-  modalTitle.textContent = 'Adicionar funcionário';
-  btnDelete.style.display = 'none';
-
-  fName.value = '';
-  fRole.value = '';
-  fStatus.value = 'ACTIVE';
-  fType.value = 'MUNICIPIO';
-  fId.value = '';
-
-  const nome = getNome(selectedFeature.properties);
-  fTarget.value = `${nome} (${selectedCode})`;
-
-  fRegionValue.value = '';
-  syncTypeFields();
-
-  showModal(true);
-}
-
-function openModalForEdit(idx){
-  const emp = db.employees[idx];
-  if (!emp) return;
-
-  editingEmployeeInternalId = idx;
-  modalTitle.textContent = 'Editar funcionário';
-  btnDelete.style.display = 'inline-block';
-
-  fName.value = emp.name || '';
-  fRole.value = emp.role || '';
-  fStatus.value = (emp.status || 'ACTIVE').toUpperCase();
-  fId.value = emp.id || '';
-
-  const a = emp.assignment;
-  if (a?.type === 'REGIAO'){
-    fType.value = 'REGIAO';
-    syncTypeFields();
-    fRegionField.value = a.field || fRegionField.value;
-    fRegionValue.value = a.value || '';
-    fTarget.value = `Região: ${a.value} (${a.field})`;
-  } else {
-    fType.value = 'MUNICIPIO';
-    syncTypeFields();
-    const code = String(a?.code || '').trim();
-    const ft = codeToFeature.get(code);
-    const nome = ft ? getNome(ft.properties) : '(município)';
-    fTarget.value = `${nome} (${code || '-'})`;
-  }
-
-  showModal(true);
-}
-
-function collectAssignmentFromForm(){
-  const type = fType.value;
-
-  if (type === 'REGIAO'){
-    const field = fRegionField.value;
-    const value = String(fRegionValue.value || '').trim();
-    if (!field || field.includes('Nenhum campo')) return null;
-    if (!value) return null;
-    return { type:'REGIAO', field, value };
-  }
-
-  if (!selectedCode) return null;
-  return { type:'MUNICIPIO', code: String(selectedCode).trim() };
-}
-
-function saveEmployee(){
-  const name = String(fName.value || '').trim();
-  const role = String(fRole.value || '').trim();
-  const status = String(fStatus.value || 'ACTIVE').toUpperCase();
-  const id = String(fId.value || '').trim();
-
-  if (!name){
-    showToast('Informe o nome do funcionário.');
-    return;
-  }
-
-  const assignment = collectAssignmentFromForm();
-  if (!assignment){
-    showToast('Defina a alocação (município ou região).');
-    return;
-  }
-
-  const emp = { id, name, role, status, assignment };
-
-  if (editingEmployeeInternalId === null){
-    db.employees.push(emp);
-  } else {
-    db.employees[editingEmployeeInternalId] = emp;
-  }
-
-  saveDbToLocalStorage();
-  rebuildStats();
-  if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
-  renderAllocationsPanel();
+function closeClientModal(){
   showModal(false);
-  showToast(editingEmployeeInternalId === null ? 'Funcionário adicionado.' : 'Funcionário atualizado.');
-  editingEmployeeInternalId = null;
+  editingClientIndex = null;
+  btnAddSelectedRegion.disabled = true;
 }
 
-function deleteEmployee(){
-  if (editingEmployeeInternalId === null) return;
-  const emp = db.employees[editingEmployeeInternalId];
-  if (!emp) return;
+function updateClientRegionsUI(regions){
+  const regs = Array.isArray(regions) ? regions : [];
+  fRegionsCount.value = String(regs.length);
 
-  const ok = confirm(`Excluir o funcionário "${emp.name}"?`);
+  clientRegionsList.innerHTML = "";
+  const sorted = regs.slice().sort((a,b)=>String(a).localeCompare(String(b),"pt-BR"));
+
+  for (const rv of sorted){
+    const pill = document.createElement("span");
+    pill.className = "badge";
+    pill.style.cursor = "pointer";
+    pill.textContent = rv;
+    pill.title = "Clique para remover esta região do cliente";
+    pill.onclick = () => removeRegionFromEditingClient(rv);
+    clientRegionsList.appendChild(pill);
+  }
+}
+
+function getEditingClient(){
+  if (editingClientIndex === null) return null;
+  return db.clients[editingClientIndex] || null;
+}
+
+function addRegionToClient(client, regionValue){
+  const rv = String(regionValue || "").trim();
+  if (!rv){
+    alert("Região vazia.");
+    return false;
+  }
+
+  // impede conflito: mesma região em outro cliente
+  for (const c of db.clients){
+    if (c === client) continue;
+    if (Array.isArray(c.regions) && c.regions.includes(rv)){
+      const ok = confirm(`A região "${rv}" já está atribuída ao cliente "${c.name}".\nDeseja mover essa região para "${client.name}"?`);
+      if (!ok) return false;
+
+      c.regions = c.regions.filter(x => x !== rv);
+    }
+  }
+
+  if (!Array.isArray(client.regions)) client.regions = [];
+  if (!client.regions.includes(rv)){
+    client.regions.push(rv);
+  }
+  return true;
+}
+
+function addRegionFromSelectedMunicipio(){
+  const client = getEditingClient();
+  if (!client){
+    alert("Abra um cliente em modo edição primeiro.");
+    return;
+  }
+  if (!db.regionField){
+    alert("Selecione o Campo de Região primeiro.");
+    return;
+  }
+  const rv = getSelectedRegionValue();
+  if (!rv){
+    alert("Não foi possível obter a região do município selecionado.");
+    return;
+  }
+
+  if (addRegionToClient(client, rv)){
+    saveDb();
+    rebuildCoverageIndex();
+    if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
+    updateClientRegionsUI(client.regions);
+    renderClients();
+    mostrarInfoMunicipio(selectedFeature?.properties || {});
+  }
+}
+
+function addRegionFromInput(){
+  const client = getEditingClient();
+  if (!client){
+    alert("Abra um cliente em modo edição primeiro.");
+    return;
+  }
+  if (!db.regionField){
+    alert("Selecione o Campo de Região primeiro.");
+    return;
+  }
+  const rv = String(fRegionToAdd.value || "").trim();
+  if (!rv){
+    alert("Informe uma região.");
+    return;
+  }
+
+  if (addRegionToClient(client, rv)){
+    fRegionToAdd.value = "";
+    saveDb();
+    rebuildCoverageIndex();
+    if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
+    updateClientRegionsUI(client.regions);
+    renderClients();
+  }
+}
+
+function removeRegionFromEditingClient(regionValue){
+  const client = getEditingClient();
+  if (!client) return;
+
+  const rv = String(regionValue || "").trim();
+  client.regions = (client.regions || []).filter(x => x !== rv);
+
+  saveDb();
+  rebuildCoverageIndex();
+  if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
+  updateClientRegionsUI(client.regions);
+  renderClients();
+  if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
+}
+
+function clearClientRegions(){
+  const client = getEditingClient();
+  if (!client) return;
+  const ok = confirm("Remover todas as regiões deste cliente?");
   if (!ok) return;
 
-  db.employees.splice(editingEmployeeInternalId, 1);
-  editingEmployeeInternalId = null;
-
-  saveDbToLocalStorage();
-  rebuildStats();
-  if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
-  renderAllocationsPanel();
-  showModal(false);
-  showToast('Funcionário excluído.');
+  client.regions = [];
+  saveDb();
+  rebuildCoverageIndex();
+  if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
+  updateClientRegionsUI(client.regions);
+  renderClients();
+  if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
 }
 
-const map = L.map('map').setView([-22.7, -48.8], 7);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '© OpenStreetMap'
-}).addTo(map);
+function saveClient(){
+  const name = String(fClientName.value || "").trim();
+  const id = String(fClientId.value || "").trim();
+  const notes = String(fClientNotes.value || "").trim();
+  const color = String(fClientColor.value || "").trim() || "#9ca3af";
 
-window.addEventListener('resize', () => {
-  try{ map.invalidateSize(); }catch(e){}
-});
-
-async function init(){
-  const spRes = await fetch(SP_URL, { cache:'no-store' });
-  if (!spRes.ok) throw new Error('Falha ao carregar sp.json: ' + spRes.status);
-  const sp = await spRes.json();
-
-  const munRes = await fetch(MUNICIPIOS_URL, { cache:'no-store' });
-  if (!munRes.ok) throw new Error('Falha ao carregar sp_municipios_2024.geojson: ' + munRes.status);
-  municipiosGeo = await munRes.json();
-
-  const spFeature = (sp.type === 'FeatureCollection') ? sp.features[0] : sp;
-  spOutlineLayer = L.geoJSON(spFeature, {
-    style: { color:'#111827', weight:2.6, opacity:1, fill:false }
-  }).addTo(map);
-
-  if (municipiosGeo.type !== 'FeatureCollection'){
-    throw new Error('GeoJSON de municípios inválido: esperado FeatureCollection, veio ' + municipiosGeo.type);
-  }
-
-  buildIndexes();
-
-  loadDbFromLocalStorage();
-  await tryLoadInitialEmployeeIndex();
-
-  rebuildStats();
-
-  municipiosLayer = L.geoJSON(municipiosGeo, {
-    style: styleMunicipio,
-    onEachFeature: (feature, layer) => {
-      layer.on({
-        mouseover: highlightFeature,
-        mouseout: resetHighlight,
-        click: onMunicipioClick
-      });
-    }
-  }).addTo(map);
-
-  map.fitBounds(municipiosLayer.getBounds(), { padding:[30,30] });
-  setTimeout(() => {
-    try{ map.invalidateSize(); }catch(e){}
-  }, 50);
-
-  renderAllocationsPanel();
-  showToast('Mapa pronto.');
-}
-
-btnAdd.onclick = openModalForAdd;
-btnCloseModal.onclick = () => showModal(false);
-modalBackdrop.onclick = (e) => { if (e.target === modalBackdrop) showModal(false); };
-btnSave.onclick = saveEmployee;
-btnDelete.onclick = deleteEmployee;
-
-fType.onchange = () => { fRegionValue.value = ''; syncTypeFields(); };
-fRegionField.onchange = () => { fRegionValue.value = ''; syncTypeFields(); };
-fRegionValue.oninput = () => syncTypeFields();
-
-btnClearSearch.onclick = () => {
-  searchInput.value = '';
-  searchResults.innerHTML = '';
-};
-
-searchInput.oninput = () => {
-  const term = normalize(searchInput.value);
-  if (term.length < 2){
-    searchResults.innerHTML = '';
+  if (!name){
+    alert("Informe o nome do cliente.");
     return;
   }
-  const matches = nameIndex.filter(x => x.nameKey.includes(term)).slice(0, 40);
-  renderSearchResults(matches);
-};
 
-btnZoomSP.onclick = () => {
-  if (municipiosLayer){
-    map.fitBounds(municipiosLayer.getBounds(), { padding:[30,30] });
+  if (editingClientIndex === null){
+    const client = { id, name, notes, color, regions: [] };
+    db.clients.push(client);
+    lastEditedClientId = id || name;
+  } else {
+    const c = db.clients[editingClientIndex];
+    if (!c) return;
+    c.name = name;
+    c.id = id;
+    c.notes = notes;
+    c.color = color;
+    if (!Array.isArray(c.regions)) c.regions = [];
+    lastEditedClientId = id || name;
   }
-};
 
-init().catch(err => {
-  console.error(err);
-  alert('Erro ao iniciar: ' + (err?.message || err));
+  saveDb();
+  rebuildCoverageIndex();
+  if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
+  renderClients();
+
+  // atualiza info box se a região atual estiver atribuída
+  if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
+
+  alert("Cliente salvo.");
+  closeClientModal();
+}
+
+function deleteClient(){
+  if (editingClientIndex === null) return;
+  const c = db.clients[editingClientIndex];
+  if (!c) return;
+
+  const ok = confirm(`Excluir o cliente "${c.name}"?`);
+  if (!ok) return;
+
+  db.clients.splice(editingClientIndex, 1);
+  editingClientIndex = null;
+
+  saveDb();
+  rebuildCoverageIndex();
+  if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
+  renderClients();
+  if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
+
+  alert("Cliente excluído.");
+  closeClientModal();
+}
+
+function quickAddRegionToLastEditedClient(){
+  if (!lastEditedClientId){
+    alert("Nenhum cliente editado recentemente.");
+    return;
+  }
+  if (!db.regionField){
+    alert("Selecione o Campo de Região.");
+    return;
+  }
+  const rv = getSelectedRegionValue();
+  if (!rv){
+    alert("Selecione um município para obter a região.");
+    return;
+  }
+
+  const c = db.clients.find(x => (x.id && x.id === lastEditedClientId) || (x.name && x.name === lastEditedClientId));
+  if (!c){
+    alert("Cliente recente não encontrado.");
+    return;
+  }
+
+  // “mexe” direto sem modal
+  if (addRegionToClient(c, rv)){
+    saveDb();
+    rebuildCoverageIndex();
+    if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
+    renderClients();
+    if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
+    alert(`Região "${rv}" adicionada ao cliente "${c.name}".`);
+  }
+}
+
+function focusClientCoverage(client){
+  if (!db.regionField){
+    alert("Selecione o Campo de Região primeiro.");
+    return;
+  }
+  if (!client || !Array.isArray(client.regions) || !client.regions.length){
+    alert("Este cliente não tem regiões cadastradas.");
+    return;
+  }
+
+  const targetRegions = new Set(client.regions.map(x => String(x).trim()).filter(Boolean));
+  const layers = [];
+
+  if (geoJsonLayer){
+    geoJsonLayer.eachLayer(l => {
+      const props = l.feature?.properties || {};
+      const rv = safeStr(props[db.regionField]).trim();
+      if (targetRegions.has(rv)){
+        layers.push(l);
+      }
+    });
+  }
+
+  if (!layers.length){
+    alert("Não encontrei municípios no mapa para essas regiões. Verifique o Campo de Região e os valores cadastrados.");
+    return;
+  }
+
+  const group = L.featureGroup(layers);
+  mapa.fitBounds(group.getBounds(), { padding: [40,40], maxZoom: 10, animate: true, duration: 0.6 });
+}
+
+function exportClientsJson(){
+  const payload = {
+    updatedAt: db.updatedAt,
+    regionField: db.regionField,
+    clients: db.clients
+  };
+  const txt = JSON.stringify(payload, null, 2);
+
+  const blob = new Blob([txt], { type: "application/json;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "clients_coverage_export.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// =========================
+// INIT MAP
+// =========================
+
+async function carregarContornoSP() {
+  const data = await tentarCarregar(ARQUIVOS_CONTORNO);
+  if (!data) {
+    atualizarStatus("Contorno não encontrado!");
+    return;
+  }
+
+  try {
+    const features = data.features || [];
+    if (features.length > 0) {
+      const feature = features[0];
+      contournoLayer = L.geoJSON(feature, {
+        style: { color: "#000000", weight: 3, opacity: 1, fill: false, lineCap: "round", lineJoin: "round" }
+      }).addTo(mapa);
+      atualizarStatus("Contorno desenhado");
+    }
+  } catch (error) {
+    atualizarStatus("Erro ao desenhar contorno: " + error.message);
+  }
+}
+
+async function carregarGeoJSON() {
+  const data = await tentarCarregar(ARQUIVOS_MUNICIPIOS);
+  if (!data) {
+    atualizarStatus("Arquivo de municípios não encontrado!");
+    return;
+  }
+
+  try {
+    let features;
+    if (data.type === "GeometryCollection" && data.geometries) {
+      features = data.geometries.map((geom, idx) => ({
+        type: "Feature",
+        properties: { NMMUN: `Município ${idx + 1}`, CDMUN: idx + 1, id: idx },
+        geometry: geom
+      }));
+    } else if (data.type === "FeatureCollection" && data.features) {
+      features = data.features;
+    } else if (Array.isArray(data)) {
+      features = data;
+    }
+
+    if (!features || features.length === 0) {
+      atualizarStatus("Nenhuma geometria encontrada no arquivo!");
+      return;
+    }
+
+    loadedFeatures = features;
+
+    // mostra chaves e prepara select
+    if (features[0] && features[0].properties) {
+      const keys = Object.keys(features[0].properties);
+      console.log("Propriedades disponíveis no GeoJSON (keys do 1º município):", keys);
+      preencherSelectCamposRegiao(keys);
+    }
+
+    const geoJsonData = { type: "FeatureCollection", features: features };
+
+    if (geoJsonLayer) {
+      try { mapa.removeLayer(geoJsonLayer); } catch (e) {}
+      geoJsonLayer = null;
+    }
+
+    geoJsonLayer = L.geoJSON(geoJsonData, {
+      style: getStyle,
+      onEachFeature: onEachFeature
+    }).addTo(mapa);
+
+    mapa.fitBounds(geoJsonLayer.getBounds(), { padding: [20,20] });
+    document.getElementById("loading").style.display = "none";
+    atualizarStatus(`Mapa pronto com ${features.length} municípios!`);
+
+  } catch (error) {
+    atualizarStatus("Erro ao carregar: " + error.message);
+    console.error("Erro:", error);
+  }
+}
+
+async function initMap() {
+  mapa = L.map("map").setView([-22.5, -48], 7);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "© OpenStreetMap contributors"
+  }).addTo(mapa);
+
+  atualizarStatus("Carregando contorno...");
+  await carregarContornoSP();
+
+  atualizarStatus("Carregando municípios...");
+  await carregarGeoJSON();
+
+  // após carregar, preenche datalist de regiões para o campo selecionado
+  fillRegionsDatalist();
+}
+
+// =========================
+// EVENTS
+// =========================
+
+regionFieldSelect.addEventListener("change", () => {
+  const field = String(regionFieldSelect.value || "").trim() || null;
+  db.regionField = field;
+  saveDb();
+
+  fillRegionsDatalist();
+  rebuildCoverageIndex();
+
+  if (selectedFeature){
+    mostrarInfoMunicipio(selectedFeature.properties || {});
+  }
+
+  if (geoJsonLayer){
+    geoJsonLayer.setStyle(getStyle);
+  }
+});
+
+chkColorByClientCoverage.addEventListener("change", () => {
+  if (!geoJsonLayer) return;
+  if (chkColorByClientCoverage.checked && !db.regionField){
+    alert("Para colorir, selecione primeiro o Campo de Região.");
+    chkColorByClientCoverage.checked = false;
+    return;
+  }
+  geoJsonLayer.setStyle(getStyle);
+});
+
+// =========================
+// BOOT
+// =========================
+
+window.addEventListener("load", () => {
+  loadDb();
+  seedInitialClientsIfEmpty();
+  rebuildCoverageIndex();
+  renderClients();
+  initMap();
 });
 
 </script>
