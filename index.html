@@ -418,6 +418,24 @@
     </div>
 
     <div class="row">
+      <button class="secondary" onclick="preencherWAUXcomGuarulhos()">
+        WAUX: preencher Guarulhos
+      </button>
+    </div>
+
+    <div class="row">
+      <button class="secondary" onclick="preencherMONTEBELLOcomPiracicaba()">
+        MONTEBELLO: preencher Piracicaba
+      </button>
+    </div>
+
+    <div class="row">
+      <button class="secondary" onclick="preencherHIRATAcomSJRP()">
+        HIRATA: preencher São José do Rio Preto
+      </button>
+    </div>
+
+    <div class="row">
       <div class="clientsList" id="clientsList"></div>
     </div>
   </div>
@@ -583,6 +601,18 @@
       "maua",
       "ribeirao pires",
       "rio grande da serra"
+    ];
+
+    const WAUX_CIDADES = [
+      "guarulhos"
+    ];
+
+    const MONTEBELLO_CIDADES = [
+      "piracicaba"
+    ];
+
+    const HIRATA_CIDADES = [
+      "sao jose do rio preto"
     ];
 
     let db = { updatedAt: null, regionField: null, clients: [] };
@@ -1487,12 +1517,78 @@
 
       if (!regioesSet.size){
         alert("Não consegui achar nenhuma região para o ABCD com o Campo de Região atual. Verifique se o campo está correto.");
+      } else {
+        let adicionadas = 0;
+        regioesSet.forEach(function(rv){
+          if (addRegionToClient(suporte, rv)) adicionadas += 1;
+        });
+
+        saveDb();
+        rebuildCoverageIndex();
+        if (geoJsonLayer) geoJsonLayer.setStyle(getStyle);
+        renderClients();
+        if (selectedFeature) mostrarInfoMunicipio(selectedFeature.properties || {});
+      }
+
+      const listaEncontrados = encontrados.sort().join(", ");
+      const listaNao = Array.from(naoEncontrados).sort().join(", ");
+
+      let msg = "Regiões do ABCD + MRR processadas para o cliente SUPPORTE.\n\n";
+      msg += "Campo de Região: " + db.regionField + "\n";
+      msg += "Municípios encontrados no GeoJSON:\n" + (listaEncontrados || "-") + "\n\n";
+      msg += "Municípios da lista que NÃO encontrei (nome diferente no GeoJSON?):\n" + (listaNao || "-");
+      alert(msg);
+    }
+
+    function preencherClientePorListaDeMunicipios(clientNameContains, listaMunicipiosNormalizados, tituloAcao){
+      if (!db.regionField){
+        alert("Selecione antes o Campo de Região no painel (ex.: NM_RGI, NM_MICRO, etc.).");
+        return;
+      }
+      if (!loadedFeatures.length){
+        alert("GeoJSON de municípios ainda não carregado.");
+        return;
+      }
+
+      const alvoNome = String(clientNameContains || "").toUpperCase().trim();
+      const cliente = db.clients.find(function(c){
+        return (String(c.name || "").toUpperCase().indexOf(alvoNome) !== -1);
+      });
+
+      if (!cliente){
+        alert('Cliente "' + clientNameContains + '" não encontrado na lista de clientes.');
+        return;
+      }
+
+      const alvoSet = new Set(listaMunicipiosNormalizados || []);
+      const encontrados = [];
+      const naoEncontrados = new Set(listaMunicipiosNormalizados || []);
+      const regioesSet = new Set();
+
+      for (const ft of loadedFeatures){
+        const props = ft.properties || {};
+        const nameField = guessNameField(props);
+        const nomeOriginal = safeStr(props[nameField]).trim();
+        if (!nomeOriginal) continue;
+
+        const norm = normalizeMunNameForMatch(nomeOriginal);
+        if (alvoSet.has(norm)){
+          naoEncontrados.delete(norm);
+          encontrados.push(nomeOriginal);
+
+          const rv = safeStr(props[db.regionField]).trim();
+          if (rv) regioesSet.add(rv);
+        }
+      }
+
+      if (!regioesSet.size){
+        alert("Não consegui achar nenhuma região para: " + (tituloAcao || alvoNome) + "\nVerifique o Campo de Região e se o(s) município(s) existe(m) no GeoJSON.");
         return;
       }
 
       let adicionadas = 0;
       regioesSet.forEach(function(rv){
-        if (addRegionToClient(suporte, rv)) adicionadas += 1;
+        if (addRegionToClient(cliente, rv)) adicionadas += 1;
       });
 
       saveDb();
@@ -1504,12 +1600,25 @@
       const listaEncontrados = encontrados.sort().join(", ");
       const listaNao = Array.from(naoEncontrados).sort().join(", ");
 
-      let msg = "Regiões do ABCD + MRR processadas para o cliente SUPPORTE.\n\n";
+      let msg = "Ação automática concluída: " + (tituloAcao || alvoNome) + "\n\n";
+      msg += "Cliente: " + (cliente.name || alvoNome) + "\n";
       msg += "Campo de Região: " + db.regionField + "\n";
-      msg += "Regiões únicas adicionadas ao SUPPORTE: " + String(adicionadas) + "\n\n";
+      msg += "Regiões únicas adicionadas: " + String(adicionadas) + "\n\n";
       msg += "Municípios encontrados no GeoJSON:\n" + (listaEncontrados || "-") + "\n\n";
       msg += "Municípios da lista que NÃO encontrei (nome diferente no GeoJSON?):\n" + (listaNao || "-");
       alert(msg);
+    }
+
+    function preencherWAUXcomGuarulhos(){
+      preencherClientePorListaDeMunicipios("WAUX", WAUX_CIDADES, "WAUX: Guarulhos");
+    }
+
+    function preencherMONTEBELLOcomPiracicaba(){
+      preencherClientePorListaDeMunicipios("MONTEBELLO", MONTEBELLO_CIDADES, "MONTEBELLO: Piracicaba");
+    }
+
+    function preencherHIRATAcomSJRP(){
+      preencherClientePorListaDeMunicipios("HIRATA", HIRATA_CIDADES, "HIRATA: São José do Rio Preto");
     }
 
     async function carregarContornoSP() {
