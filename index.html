@@ -401,7 +401,13 @@ input, .input{
 
   <div class="modal-body">
     <div class="field">
-      <label>Nome</label>
+      <label>Selecionar Cliente</label>
+      <select id="fClientSelect">
+        <option value="NEW">+ Novo Cliente</option>
+      </select>
+    </div>
+    <div class="field" id="fNameWrap">
+      <label>Nome do Novo Cliente</label>
       <input id="fName" placeholder="Ex.: Nome do Cliente" />
     </div>
     <div class="field">
@@ -525,6 +531,8 @@ const fRegionField = $('fRegionField');
 const fRegionValue = $('fRegionValue');
 const fTarget = $('fTarget');
 const fId = $('fId');
+const fClientSelect = $('fClientSelect');
+const fNameWrap = $('fNameWrap');
 
 const regionFieldWrap = $('regionFieldWrap');
 const regionValueWrap = $('regionValueWrap');
@@ -849,18 +857,48 @@ function renderAllocationsPanel(){
   }
 }
 
+function updateClientSelect(){
+  fClientSelect.innerHTML = '<option value="NEW">+ Novo Cliente</option>';
+  const sortedIds = Object.keys(db.clients).sort((a, b) => 
+    db.clients[a].name.localeCompare(db.clients[b].name)
+  );
+  for (const id of sortedIds){
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = db.clients[id].name;
+    fClientSelect.appendChild(opt);
+  }
+}
+
+function onClientSelectChange(){
+  const val = fClientSelect.value;
+  if (val === 'NEW'){
+    fNameWrap.style.display = 'block';
+    fName.value = '';
+    fRole.value = '';
+    fId.value = '';
+    fStatus.value = 'ACTIVE';
+  } else {
+    fNameWrap.style.display = 'none';
+    const client = db.clients[val];
+    fName.value = client.name;
+    fRole.value = client.role;
+    fId.value = val;
+    fStatus.value = client.status;
+  }
+}
+
 function openAddModal(){
   if (!selectedCode) return;
   editingClientId = null;
   modalTitle.textContent = 'Adicionar cliente';
   btnDelete.style.display = 'none';
   
-  fName.value = '';
-  fRole.value = '';
-  fStatus.value = 'ACTIVE';
-  fType.value = 'MUNICIPIO';
-  fId.value = '';
+  updateClientSelect();
+  fClientSelect.value = 'NEW';
+  onClientSelectChange();
   
+  fType.value = 'MUNICIPIO';
   updateModalFields();
   modalBackdrop.style.display = 'flex';
 }
@@ -873,12 +911,15 @@ function openEditModal(id){
   modalTitle.textContent = 'Editar cliente';
   btnDelete.style.display = 'block';
   
+  updateClientSelect();
+  fClientSelect.value = id;
+  fNameWrap.style.display = 'none';
+  
   fName.value = client.name;
   fRole.value = client.role;
   fStatus.value = client.status;
   fId.value = id;
   
-  // Para edição, pegamos o primeiro assignment para o formulário simples
   const assignment = client.assignments?.[0] || client.assignment || { type:'MUNICIPIO', code: selectedCode };
   fType.value = assignment.type;
   if (assignment.type === 'REGIAO'){
@@ -915,20 +956,35 @@ function saveClient(){
     ? { type: 'MUNICIPIO', code: selectedCode }
     : { type: 'REGIAO', field: fRegionField.value, value: fRegionValue.value.trim() };
 
-  const clientData = {
-    name: name,
-    role: fRole.value.trim(),
-    status: fStatus.value,
-    assignments: [assignment] // Nova estrutura sempre usa array
-  };
+  // Se o cliente já existe, adicionar a nova alocação à lista dele
+  if (db.clients[id]){
+    // Evitar duplicar a mesma alocação exata
+    const alreadyHas = db.clients[id].assignments.some(a => 
+      a.type === assignment.type && 
+      (a.code === assignment.code || (a.field === assignment.field && a.value === assignment.value))
+    );
+    if (!alreadyHas){
+      db.clients[id].assignments.push(assignment);
+    }
+    // Atualizar outros campos se mudaram
+    db.clients[id].name = name;
+    db.clients[id].role = fRole.value.trim();
+    db.clients[id].status = fStatus.value;
+  } else {
+    // Novo cliente
+    db.clients[id] = {
+      name: name,
+      role: fRole.value.trim(),
+      status: fStatus.value,
+      assignments: [assignment]
+    };
+  }
 
-  // Se estiver editando e o ID mudou, remover o antigo
+  // Se estiver editando e o ID mudou, remover o antigo (caso de renomear ID)
   if (editingClientId && editingClientId !== id){
     delete db.clients[editingClientId];
   }
 
-  db.clients[id] = clientData;
-  
   saveDbToLocalStorage();
   rebuildStats();
   municipiosLayer.setStyle(styleMunicipio);
@@ -1015,6 +1071,7 @@ btnCloseModal.onclick = () => modalBackdrop.style.display = 'none';
 btnSave.onclick = saveClient;
 btnDelete.onclick = deleteClient;
 fType.onchange = updateModalFields;
+fClientSelect.onchange = onClientSelectChange;
 
 btnZoomSP.onclick = () => {
   if (spOutlineLayer) map.fitBounds(spOutlineLayer.getBounds(), { 
