@@ -15,18 +15,6 @@
 --c-inactive:#c62828;
 --c-active:#2e7d32;
 --c-selected:#ff6f00;
---color-1: #E53935;
---color-2: #FB8C00;
---color-3: #FDD835;
---color-4: #43A047;
---color-5: #1E88E5;
---color-6: #8E24AA;
---color-7: #00ACC1;
---color-8: #D81B60;
---color-9: #F57C00;
---color-10: #5E35B1;
---color-11: #00897B;
---color-12: #C2185B;
 }
 html, body { height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
 body{ overflow:hidden; background:#f3f4f6; }
@@ -169,18 +157,6 @@ input, .input{
   background:#fff;
   transition: border-color 0.2s ease;
 }
-.item.color-1{ border-color: #E53935; border-left: 4px solid #E53935; }
-.item.color-2{ border-color: #FB8C00; border-left: 4px solid #FB8C00; }
-.item.color-3{ border-color: #FDD835; border-left: 4px solid #FDD835; }
-.item.color-4{ border-color: #43A047; border-left: 4px solid #43A047; }
-.item.color-5{ border-color: #1E88E5; border-left: 4px solid #1E88E5; }
-.item.color-6{ border-color: #8E24AA; border-left: 4px solid #8E24AA; }
-.item.color-7{ border-color: #00ACC1; border-left: 4px solid #00ACC1; }
-.item.color-8{ border-color: #D81B60; border-left: 4px solid #D81B60; }
-.item.color-9{ border-color: #F57C00; border-left: 4px solid #F57C00; }
-.item.color-10{ border-color: #5E35B1; border-left: 4px solid #5E35B1; }
-.item.color-11{ border-color: #00897B; border-left: 4px solid #00897B; }
-.item.color-12{ border-color: #C2185B; border-left: 4px solid #C2185B; }
 .item .row{
   display:flex;
   justify-content:space-between;
@@ -449,11 +425,13 @@ const SP_URL = './sp.json';
 const MUNICIPIOS_URL = './sp_municipios_2024.geojson';
 const EMPREGADOS_URL = './employee_index.json';
 const STORAGE_KEY = 'sp_allocations_v2';
-const CLIENT_COLORS = [
-  '#E53935', '#FB8C00', '#FDD835', '#43A047', '#1E88E5',
-  '#8E24AA', '#00ACC1', '#D81B60', '#F57C00', '#5E35B1',
-  '#00897B', '#C2185B'
-];
+
+// ✅ Função para gerar cor automática (HSL garante visibilidade)
+function generateAutoColor() {
+  const hue = Math.floor(Math.random() * 360);
+  return `hsl(${hue}, 70%, 45%)`;
+}
+
 let FIELD_NOME = null;
 let FIELD_CODIGO = null;
 const REGION_FIELD_CANDIDATES = ['NM_MICRO','NM_IMEDIAT','NM_REGIAO','REGIAO','MICRO','IMEDIAT','NM_MESO','NM_RGI','NM_RGI_IM'];
@@ -502,6 +480,7 @@ const regionFieldWrap = $('regionFieldWrap');
 const regionValueWrap = $('regionValueWrap');
 const toast = $('toast');
 let editingClientId = null;
+
 function showToast(msg){
   toast.textContent = msg;
   toast.classList.add('show');
@@ -520,17 +499,7 @@ function safeStr(v){
   if (v === null || v === undefined) return '';
   return String(v);
 }
-function getNextClientColor(){
-  const clientCount = Object.keys(db.clients).length;
-  return CLIENT_COLORS[clientCount % CLIENT_COLORS.length];
-}
-function getColorClass(colorIndex){
-  return `color-${(colorIndex % CLIENT_COLORS.length) + 1}`;
-}
-function getColorFromHex(hex){
-  const idx = CLIENT_COLORS.indexOf(hex);
-  return idx >= 0 ? idx : 0;
-}
+
 function detectFields(geo){
   const f = geo.features?.[0];
   const props = f?.properties || {};
@@ -612,11 +581,9 @@ async function tryLoadInitialEmployeeIndex(){
     const j = await r.json();
     if (!db.clients || Object.keys(db.clients).length === 0){
       const clients = j.clients || {};
-      let colorIndex = 0;
       for (const id in clients){
         if (!clients[id].color){
-          clients[id].color = CLIENT_COLORS[colorIndex % CLIENT_COLORS.length];
-          colorIndex++;
+          clients[id].color = generateAutoColor();
         }
       }
       db = {
@@ -756,6 +723,8 @@ function renderSearchResults(items){
     searchResults.appendChild(div);
   }
 }
+
+// ✅ RENDERIZAÇÃO COM CORES AUTOMÁTICAS
 function renderAllocationsPanel(){
   allocList.innerHTML = '';
   const entry = muniStats.get(selectedCode);
@@ -765,12 +734,15 @@ function renderAllocationsPanel(){
   }
   countSub.textContent = `${entry.clients.length} cliente(s) nesta localidade.`;
   for (const client of entry.clients){
-    const colorIdx = getColorFromHex(client.color);
-    const colorClass = getColorClass(colorIdx);
     const colorDot = client.color || '#999';
     const isActive = client.status === 'ACTIVE';
     const div = document.createElement('div');
-    div.className = `item ${colorClass}`;
+    div.className = `item`;
+    
+    // ✅ Aplicar borda colorida dinamicamente
+    div.style.borderLeft = `5px solid ${colorDot}`;
+    div.style.borderColor = colorDot;
+
     div.innerHTML = `
       <div class="row">
         <div style="flex:1;">
@@ -791,6 +763,7 @@ function renderAllocationsPanel(){
     allocList.appendChild(div);
   }
 }
+
 function updateClientSelect(){
   fClientSelect.innerHTML = '<option value="NEW">+ Novo Cliente</option>';
   const sortedIds = Object.keys(db.clients).sort((a, b) => 
@@ -888,12 +861,12 @@ function saveClient(){
     db.clients[id].role = fRole.value.trim();
     db.clients[id].status = fStatus.value;
   } else {
-    const newColor = getNextClientColor();
+    // ✅ Geração automática de cor para novo cliente
     db.clients[id] = {
       name: name,
       role: fRole.value.trim(),
       status: fStatus.value,
-      color: newColor,
+      color: generateAutoColor(),
       assignments: [assignment]
     };
   }
@@ -955,7 +928,6 @@ async function init(){
       }
     }).addTo(map);
 
-    // ✅ FORCE RE-RENDER: Reapliar estilo para cada feature
     municipiosLayer.eachLayer((layer) => {
       layer.setStyle(styleMunicipio(layer.feature));
     });
