@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>São Paulo | Alocação de Funcionários por Município</title>
+<title>São Paulo | Alocação de Clientes por Município</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
@@ -335,12 +335,12 @@ input, .input{
 <div class="card panel" id="sidePanel">
   <div class="panel-head">
     <div>
-      <div class="title">Alocação de Funcionários</div>
+      <div class="title">Alocação de Clientes</div>
       <div class="sub" id="selSub">Nenhum município selecionado</div>
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
       <button class="btn xs" id="btnZoomSP">Ver SP</button>
-      <button class="btn primary" id="btnAdd" disabled>Adicionar funcionário</button>
+      <button class="btn primary" id="btnAdd" disabled>Adicionar cliente</button>
     </div>
   </div>
 
@@ -371,7 +371,7 @@ input, .input{
       <div style="height:10px"></div>
 
       <div class="note">
-        Dados de funcionários são salvos automaticamente neste dispositivo.
+        Dados de clientes são salvos automaticamente neste dispositivo.
       </div>
     </div>
 
@@ -380,7 +380,7 @@ input, .input{
     <div class="section">
       <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; margin-bottom:10px;">
         <div>
-          <div class="title" style="font-size:13px;">Funcionários por Localidade</div>
+          <div class="title" style="font-size:13px;">Clientes por Localidade</div>
           <div class="sub" id="countSub">Carregando...</div>
         </div>
       </div>
@@ -395,18 +395,18 @@ input, .input{
 <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
 <div class="modal">
 <div class="modal-head">
-<div class="t" id="modalTitle">Adicionar funcionário</div>
+<div class="t" id="modalTitle">Adicionar cliente</div>
 <button class="btn" id="btnCloseModal">Fechar</button>
 </div>
 
   <div class="modal-body">
     <div class="field">
       <label>Nome</label>
-      <input id="fName" placeholder="Ex.: Ana Souza" />
+      <input id="fName" placeholder="Ex.: Nome do Cliente" />
     </div>
     <div class="field">
-      <label>Cargo</label>
-      <input id="fRole" placeholder="Ex.: Consultor(a) Regional" />
+      <label>Segmento/Tipo</label>
+      <input id="fRole" placeholder="Ex.: Varejo / Atacado" />
     </div>
 
     <div class="field">
@@ -654,23 +654,22 @@ async function tryLoadInitialEmployeeIndex(){
     const j = await r.json();
     if (!j || !Array.isArray(j.employees)) return false;
 
-    if (!db.employees.length){
-      db = {
-        updatedAt: j.updatedAt || nowIso(),
-        employees: j.employees.map(x => ({
-          id: x.employeeId || x.id || '',
-          name: x.employeeName || x.name || '',
-          role: x.role || x.cargo || '',
-          status: (x.status || 'ACTIVE').toUpperCase(),
-          assignment: x.assignment || (
-            x.municipalityCode ? { type:'MUNICIPIO', code: String(x.municipalityCode) } :
-            (x.regionField && x.regionValue ? { type:'REGIAO', field: x.regionField, value: x.regionValue } : null)
-          )
-        })).filter(e => e.assignment && e.name)
-      };
-      saveDbToLocalStorage();
-      showToast('Dados iniciais carregados de employee_index.json');
-    }
+    // Forçar carregamento para demonstração se houver novos dados
+    db = {
+      updatedAt: j.updatedAt || nowIso(),
+      employees: j.employees.map(x => ({
+        id: x.employeeId || x.id || '',
+        name: x.employeeName || x.name || '',
+        role: x.role || x.cargo || '',
+        status: (x.status || 'ACTIVE').toUpperCase(),
+        assignment: x.assignment || (
+          x.municipalityCode ? { type:'MUNICIPIO', code: String(x.municipalityCode) } :
+          (x.regionField && x.regionValue ? { type:'REGIAO', field: x.regionField, value: x.regionValue } : null)
+        )
+      })).filter(e => e.assignment && e.name)
+    };
+    saveDbToLocalStorage();
+    showToast('Dados dos clientes carregados com sucesso');
     return true;
   }catch(e){
     return false;
@@ -871,7 +870,7 @@ function renderAllocationsPanel(){
 
   allocList.innerHTML = '';
   if (!groups.length){
-    allocList.innerHTML = `<div class="muted" style="font-size:12px;">Nenhuma alocação cadastrada. Selecione um município e clique em "Adicionar funcionário".</div>`;
+    allocList.innerHTML = `<div class="muted" style="font-size:12px;">Nenhuma alocação cadastrada. Selecione um município e clique em "Adicionar cliente".</div>`;
     return;
   }
 
@@ -889,7 +888,7 @@ function renderAllocationsPanel(){
         <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; padding:8px 0; border-top:${idx===0?'none':'1px solid rgba(17,24,39,.08)'};">
           <div>
             <div style="font-weight:950; color:#111827; font-size:13px;">${e.name}${id}</div>
-            <div class="meta">${role ? role : '<span class="muted">Cargo não informado</span>'}</div>
+            <div class="meta">${role ? role : '<span class="muted">Segmento/Tipo não informado</span>'}</div>
           </div>
           <div style="display:flex; gap:8px; align-items:center;">
             ${pill}
@@ -1009,7 +1008,7 @@ function openModalForAdd(){
   if (!selectedFeature || !selectedCode) return;
 
   editingEmployeeInternalId = null;
-  modalTitle.textContent = 'Adicionar funcionário';
+  modalTitle.textContent = 'Adicionar cliente';
   btnDelete.style.display = 'none';
 
   fName.value = '';
