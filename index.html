@@ -956,7 +956,9 @@ function deleteClient(){
 const map = L.map('map', {
   center: [-23.55, -46.63],
   zoom: 7,
-  zoomControl: false
+  zoomControl: false,
+  attributionControl: false, // Remover atribuição para ganhar espaço
+  maxBoundsViscosity: 1.0
 });
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -991,7 +993,14 @@ async function init(){
       }
     }).addTo(map);
 
-    map.fitBounds(spOutlineLayer.getBounds());
+    // Ajustar o enquadramento com padding mínimo para preencher a tela
+    map.fitBounds(spOutlineLayer.getBounds(), {
+      padding: [10, 10],
+      animate: false
+    });
+    
+    // Definir limites máximos para evitar que o usuário arraste para fora do estado
+    map.setMaxBounds(spOutlineLayer.getBounds().pad(0.1));
     countSub.textContent = 'Selecione um município no mapa.';
 
   }catch(e){
@@ -1008,7 +1017,10 @@ btnDelete.onclick = deleteClient;
 fType.onchange = updateModalFields;
 
 btnZoomSP.onclick = () => {
-  if (spOutlineLayer) map.fitBounds(spOutlineLayer.getBounds(), { animate:true });
+  if (spOutlineLayer) map.fitBounds(spOutlineLayer.getBounds(), { 
+    padding: [10, 10],
+    animate: true 
+  });
 };
 
 searchInput.oninput = (e) => {
