@@ -1,0 +1,52 @@
+{
+  "updatedAt": "2026-01-02T12:00:00Z",
+  "clients": {
+    "CDO": {
+      "name": "CDO",
+      "role": "Cliente - Vale do Paraíba",
+      "status": "ACTIVE",
+      "assignments": [
+        {
+          "type": "REGIAO",
+          "field": "NM_RGI",
+          "value": "São José dos Campos"
+        }
+      ]
+    },
+    "SUPPORTE": {
+      "name": "SUPPORTE",
+      "role": "Cliente - ABCD",
+      "status": "ACTIVE",
+      "assignments": [
+        { "type": "MUNICIPIO", "code": "3547809" },
+        { "type": "MUNICIPIO", "code": "3548708" },
+        { "type": "MUNICIPIO", "code": "3548807" },
+        { "type": "MUNICIPIO", "code": "3513801" }
+      ]
+    },
+    "WAUX": {
+      "name": "WAUX",
+      "role": "Cliente - Região de Guarulhos",
+      "status": "ACTIVE",
+      "assignments": [
+        { "type": "MUNICIPIO", "code": "3518800" }
+      ]
+    },
+    "MONTEBELLO": {
+      "name": "MONTEBELLO",
+      "role": "Cliente - Região de Piracicaba",
+      "status": "ACTIVE",
+      "assignments": [
+        { "type": "MUNICIPIO", "code": "3538709" }
+      ]
+    },
+    "HIRATA": {
+      "name": "HIRATA",
+      "role": "Cliente - Região de São José do Rio Preto",
+      "status": "ACTIVE",
+      "assignments": [
+        { "type": "MUNICIPIO", "code": "3549805" }
+      ]
+    }
+  }
+}
