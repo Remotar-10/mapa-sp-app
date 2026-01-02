@@ -1,86 +1,52 @@
 {
   "updatedAt": "2026-01-02T12:00:00Z",
-  "employees": [
-    {
-      "id": "CDO",
+  "clients": {
+    "CDO": {
       "name": "CDO",
       "role": "Cliente - Vale do Paraíba",
       "status": "ACTIVE",
-      "assignment": {
-        "type": "REGIAO",
-        "field": "NM_RGI",
-        "value": "São José dos Campos"
-      }
+      "assignments": [
+        {
+          "type": "REGIAO",
+          "field": "NM_RGI",
+          "value": "São José dos Campos"
+        }
+      ]
     },
-    {
-      "id": "SUPPORTE",
+    "SUPPORTE": {
       "name": "SUPPORTE",
       "role": "Cliente - ABCD",
       "status": "ACTIVE",
-      "assignment": {
-        "type": "MUNICIPIO",
-        "code": "3547809"
-      }
+      "assignments": [
+        { "type": "MUNICIPIO", "code": "3547809" },
+        { "type": "MUNICIPIO", "code": "3548708" },
+        { "type": "MUNICIPIO", "code": "3548807" },
+        { "type": "MUNICIPIO", "code": "3513801" }
+      ]
     },
-    {
-      "id": "SUPPORTE_SBC",
-      "name": "SUPPORTE",
-      "role": "Cliente - ABCD",
-      "status": "ACTIVE",
-      "assignment": {
-        "type": "MUNICIPIO",
-        "code": "3548708"
-      }
-    },
-    {
-      "id": "SUPPORTE_SCS",
-      "name": "SUPPORTE",
-      "role": "Cliente - ABCD",
-      "status": "ACTIVE",
-      "assignment": {
-        "type": "MUNICIPIO",
-        "code": "3548807"
-      }
-    },
-    {
-      "id": "SUPPORTE_DIA",
-      "name": "SUPPORTE",
-      "role": "Cliente - ABCD",
-      "status": "ACTIVE",
-      "assignment": {
-        "type": "MUNICIPIO",
-        "code": "3513801"
-      }
-    },
-    {
-      "id": "WAUX",
+    "WAUX": {
       "name": "WAUX",
       "role": "Cliente - Região de Guarulhos",
       "status": "ACTIVE",
-      "assignment": {
-        "type": "MUNICIPIO",
-        "code": "3518800"
-      }
+      "assignments": [
+        { "type": "MUNICIPIO", "code": "3518800" }
+      ]
     },
-    {
-      "id": "MONTEBELLO",
+    "MONTEBELLO": {
       "name": "MONTEBELLO",
       "role": "Cliente - Região de Piracicaba",
       "status": "ACTIVE",
-      "assignment": {
-        "type": "MUNICIPIO",
-        "code": "3538709"
-      }
+      "assignments": [
+        { "type": "MUNICIPIO", "code": "3538709" }
+      ]
     },
-    {
-      "id": "HIRATA",
+    "HIRATA": {
       "name": "HIRATA",
       "role": "Cliente - Região de São José do Rio Preto",
       "status": "ACTIVE",
-      "assignment": {
-        "type": "MUNICIPIO",
-        "code": "3549805"
-      }
+      "assignments": [
+        { "type": "MUNICIPIO", "code": "3549805" }
+      ]
     }
-  ]
+  }
 }
