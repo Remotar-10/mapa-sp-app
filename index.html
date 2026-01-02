@@ -724,9 +724,20 @@ async function tryLoadInitialEmployeeIndex(){
     const j = await r.json();
     
     if (!db.clients || Object.keys(db.clients).length === 0){
+      const clients = j.clients || {};
+      
+      // ✅ Atribuir cores aos clientes que não têm
+      let colorIndex = 0;
+      for (const id in clients){
+        if (!clients[id].color){
+          clients[id].color = CLIENT_COLORS[colorIndex % CLIENT_COLORS.length];
+          colorIndex++;
+        }
+      }
+      
       db = {
         updatedAt: j.updatedAt || nowIso(),
-        clients: j.clients || {}
+        clients: clients
       };
       saveDbToLocalStorage();
       showToast('Dados dos clientes carregados com sucesso');
