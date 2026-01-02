@@ -1,2 +1,23 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Binários: não converter line endings, evitar diffs falsos
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.pdf binary
+*.zip binary
+
+# Scripts e códigos: forçar LF (Unix-style)
+*.sh    text eol=lf
+*.py    text eol=lf
+*.js    text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.json  text eol=lf
+
+# Windows batch files: forçar CRLF
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
