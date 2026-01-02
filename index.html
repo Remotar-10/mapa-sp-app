@@ -7,181 +7,997 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{
---panel:#ffffff; --muted:#6b7280; --text:#111827; --brand:#1e3a8a;
---c-none:#bdbdbd; --c-inactive:#c62828; --c-active:#2e7d32; --c-selected:#ff6f00;
+--panel:#ffffff;
+--muted:#6b7280;
+--text:#111827;
+--brand:#1e3a8a;
+--c-none:#bdbdbd;
+--c-inactive:#c62828;
+--c-active:#2e7d32;
+--c-selected:#ff6f00;
+--color-1: #E53935;
+--color-2: #FB8C00;
+--color-3: #FDD835;
+--color-4: #43A047;
+--color-5: #1E88E5;
+--color-6: #8E24AA;
+--color-7: #00ACC1;
+--color-8: #D81B60;
+--color-9: #F57C00;
+--color-10: #5E35B1;
+--color-11: #00897B;
+--color-12: #C2185B;
 }
-html, body { height:100%; margin:0; font-family: system-ui, -apple-system, sans-serif; }
+html, body { height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
 body{ overflow:hidden; background:#f3f4f6; }
-.app{ position:fixed; inset:16px; display:grid; grid-template-columns: 1fr 460px; gap:12px; }
-#map, .map { height:100%; width:100%; border-radius:10px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.1); background:#fff; }
-.card{ background:var(--panel); border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,.1); border:1px solid rgba(0,0,0,.05); }
-.panel{ display:flex; flex-direction:column; overflow:hidden; }
-.panel-head{ padding:14px; border-bottom:1px solid rgba(0,0,0,.08); display:flex; justify-content:space-between; align-items:center; }
-.title{ font-weight:900; font-size:14px; color:var(--text); }
-.sub{ color:var(--muted); font-size:12px; }
-.panel-body{ padding:14px; overflow-y:auto; flex:1; }
-.search{ display:flex; gap:8px; margin-bottom:12px; }
-input, select{ width:100%; padding:10px; border-radius:8px; border:1px solid rgba(0,0,0,.1); font-size:13px; }
-.list{ display:flex; flex-direction:column; gap:10px; }
-.item{ border:1px solid #e5e7eb; border-radius:10px; padding:12px; background:#fff; border-left-width:6px; }
-.item .name{ font-weight:800; font-size:14px; display:flex; align-items:center; gap:8px; }
-.color-dot{ width:10px; height:10px; border-radius:50%; display:inline-block; }
-.btn{ padding:10px; border-radius:8px; border:1px solid #ddd; background:#fff; cursor:pointer; font-weight:700; font-size:12px; }
-.btn.primary{ background:var(--brand); color:#fff; border:none; }
-.btn.xs{ padding:5px 10px; font-size:11px; }
-.kv{ display:grid; grid-template-columns: 100px 1fr; gap:5px; font-size:12px; margin:10px 0; }
-.pill{ padding:4px 10px; border-radius:20px; font-size:11px; font-weight:800; display:inline-block; }
-.pill.green{ background:#e8f5e9; color:#2e7d32; }
-.pill.red{ background:#ffebee; color:#c62828; }
-.modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:9999; }
-.modal{ background:#fff; padding:20px; border-radius:12px; width:400px; max-width:90%; }
-.toast{ position:fixed; bottom:20px; left:20px; background:#333; color:#fff; padding:12px 20px; border-radius:8px; display:none; z-index:10000; }
-@media (max-width: 980px){ .app{ grid-template-columns: 1fr; position:static; height:auto; padding:10px; } .map, #map{ height:400px; } }
+.app{
+  position:fixed;
+  inset:16px;
+  display:grid;
+  grid-template-columns: 1fr 460px;
+  gap:12px;
+  box-sizing:border-box;
+}
+#map, .map { height:100%; width:100%; }
+.map{
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+  border:1px solid rgba(17,24,39,.06);
+  background:#fff;
+}
+.card{
+  background:var(--panel);
+  border-radius:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+  border:1px solid rgba(17,24,39,.06);
+}
+.panel{
+  display:flex;
+  flex-direction:column;
+  min-height:180px;
+  overflow:hidden;
+  pointer-events:auto;
+}
+.panel-head{
+  padding:12px 14px;
+  border-bottom:1px solid rgba(17,24,39,.08);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+.panel-head .title{
+  font-weight:900;
+  color:#111827;
+  font-size:13px;
+}
+.panel-head .sub{
+  color:var(--muted);
+  font-size:11px;
+  margin-top:2px;
+  line-height:1.25;
+}
+.panel-body{
+  padding:12px 14px;
+  overflow:auto;
+  flex:1;
+}
+.section{ display:block; }
+.divider{
+  height:1px;
+  background: rgba(17,24,39,.10);
+  margin:12px 0;
+}
+.btn{
+  padding:9px 10px;
+  border-radius:8px;
+  border:1px solid rgba(17,24,39,.12);
+  background:#fff;
+  cursor:pointer;
+  font-size:12px;
+  font-weight:800;
+  color:#111827;
+  user-select:none;
+  line-height:1;
+}
+.btn.primary{
+  background:var(--brand);
+  border-color:var(--brand);
+  color:#fff;
+}
+.btn.danger{
+  background:#b91c1c;
+  border-color:#b91c1c;
+  color:#fff;
+}
+.btn:disabled{ opacity:.55; cursor:not-allowed; }
+.btn.xs{
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+}
+.muted{ color:var(--muted); }
+.search{
+  display:flex; gap:8px;
+  margin-bottom:10px;
+}
+input, .input{
+  width:100%;
+  padding:9px 10px;
+  border-radius:8px;
+  border:1px solid rgba(17,24,39,.12);
+  font-size:13px;
+  box-sizing:border-box;
+  background:#fff;
+}
+.kv{
+  display:grid;
+  grid-template-columns: 120px 1fr;
+  gap:6px 10px;
+  font-size:12px;
+  margin:8px 0 10px 0;
+}
+.kv div:nth-child(odd){ color:var(--muted); }
+.kv div:nth-child(even){ color:#111827; font-weight:700; }
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:3px 8px;
+  border-radius:999px;
+  font-size:11px;
+  font-weight:900;
+  border:1px solid rgba(17,24,39,.12);
+  background:#fff;
+  color:#111827;
+}
+.pill.green{ background:#e8f5e9; border-color:#c8e6c9; color:#1b5e20; }
+.pill.red{ background:#ffebee; border-color:#ffcdd2; color:#b71c1c; }
+.pill.gray{ background:#f3f4f6; border-color:#e5e7eb; color:#374151; }
+.pill.orange{ background:#fff3e0; border-color:#ffe0b2; color:#e65100; }
+.list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.item{
+  border:2px solid #e5e7eb;
+  border-radius:10px;
+  padding:10px 10px;
+  background:#fff;
+  transition: border-color 0.2s ease;
+}
+.item.color-1{ border-color: #E53935; border-left: 4px solid #E53935; }
+.item.color-2{ border-color: #FB8C00; border-left: 4px solid #FB8C00; }
+.item.color-3{ border-color: #FDD835; border-left: 4px solid #FDD835; }
+.item.color-4{ border-color: #43A047; border-left: 4px solid #43A047; }
+.item.color-5{ border-color: #1E88E5; border-left: 4px solid #1E88E5; }
+.item.color-6{ border-color: #8E24AA; border-left: 4px solid #8E24AA; }
+.item.color-7{ border-color: #00ACC1; border-left: 4px solid #00ACC1; }
+.item.color-8{ border-color: #D81B60; border-left: 4px solid #D81B60; }
+.item.color-9{ border-color: #F57C00; border-left: 4px solid #F57C00; }
+.item.color-10{ border-color: #5E35B1; border-left: 4px solid #5E35B1; }
+.item.color-11{ border-color: #00897B; border-left: 4px solid #00897B; }
+.item.color-12{ border-color: #C2185B; border-left: 4px solid #C2185B; }
+.item .row{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:flex-start;
+}
+.item .name{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:950;
+  color:#111827;
+  font-size:13px;
+  line-height:1.2;
+}
+.color-dot{
+  display:inline-block;
+  width:12px;
+  height:12px;
+  border-radius:999px;
+  flex-shrink:0;
+}
+.item .meta{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+  line-height:1.25;
+}
+.item .actions{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  white-space:nowrap;
+}
+.link{
+  font-size:12px;
+  color:var(--brand);
+  font-weight:900;
+  cursor:pointer;
+  user-select:none;
+}
+.modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:2000;
+  padding:16px;
+}
+.modal{
+  width:min(760px, 100%);
+  background:#fff;
+  border-radius:14px;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+  overflow:hidden;
+  border:1px solid rgba(17,24,39,.12);
+}
+.modal-head{
+  padding:14px 16px;
+  border-bottom:1px solid rgba(17,24,39,.10);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+.modal-head .t{
+  font-weight:950;
+  color:#111827;
+  font-size:14px;
+}
+.modal-body{
+  padding:14px 16px;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px 12px;
+}
+@media (max-width: 860px){
+  .modal-body{ grid-template-columns: 1fr; }
+}
+.field label{
+  display:block;
+  font-size:12px;
+  font-weight:900;
+  color:#111827;
+  margin-bottom:6px;
+}
+.field input, .field select{
+  width:100%;
+  padding:10px 10px;
+  border-radius:10px;
+  border:1px solid rgba(17,24,39,.12);
+  font-size:13px;
+  box-sizing:border-box;
+  background:#fff;
+}
+.modal-foot{
+  padding:12px 16px;
+  border-top:1px solid rgba(17,24,39,.10);
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  align-items:center;
+}
+.note{
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.35;
+  max-width: 520px;
+}
+.toast{
+  position:fixed;
+  bottom:16px;
+  left:16px;
+  background:#111827;
+  color:#fff;
+  padding:10px 12px;
+  border-radius:10px;
+  font-size:12px;
+  font-weight:800;
+  opacity:0;
+  transform: translateY(10px);
+  transition: all .2s ease;
+  z-index:3000;
+  max-width: 720px;
+}
+.toast.show{
+  opacity:1;
+  transform: translateY(0);
+}
+@media (max-width: 980px){
+  body{ overflow:auto; }
+  .app{
+    position:relative;
+    inset:auto;
+    padding:12px;
+    display:grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 56vh auto;
+    gap:12px;
+  }
+  .map{ height:56vh; }
+  #map{ height:56vh; }
+}
 </style>
 </head>
 <body>
-<div class="app">
-  <div id="map"></div>
-  <div class="card panel">
-    <div class="panel-head">
-      <div><div class="title">Gestão de Clientes</div><div class="sub" id="selSub">Selecione no mapa</div></div>
-      <button class="btn primary" id="btnAdd" disabled>+ Adicionar</button>
+<div class="app" id="app">
+<div id="map" class="map"></div>
+<div class="card panel" id="sidePanel">
+  <div class="panel-head">
+    <div>
+      <div class="title">Alocação de Clientes</div>
+      <div class="sub" id="selSub">Nenhum município selecionado</div>
     </div>
-    <div class="panel-body">
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn xs" id="btnZoomSP">Ver SP</button>
+      <button class="btn primary" id="btnAdd" disabled>Adicionar cliente</button>
+    </div>
+  </div>
+  <div class="panel-body">
+    <div class="section">
       <div class="search">
-        <input id="searchInput" placeholder="Buscar cidade...">
+        <input class="input" id="searchInput" placeholder="Buscar município..." />
+        <button class="btn" id="btnClearSearch">Limpar</button>
       </div>
       <div id="searchResults" class="list"></div>
+      <div style="height:10px"></div>
       <div class="kv">
-        <div>Cidade:</div><strong id="selNome">-</strong>
-        <div>Código:</div><span id="selCodigo">-</span>
+        <div>Município</div><div id="selNome">-</div>
+        <div>Código (IBGE)</div><div id="selCodigo">-</div>
+        <div>Região (auto)</div><div id="selRegiao">-</div>
       </div>
-      <hr style="opacity:0.1">
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <span class="pill orange" id="pillSelected" style="display:none;">Selecionado</span>
+        <span class="pill green" id="pillHasActive" style="display:none;">Tem ativo</span>
+        <span class="pill red" id="pillOnlyInactive" style="display:none;">Só inativos</span>
+        <span class="pill gray" id="pillNone" style="display:none;">Sem alocação</span>
+      </div>
+      <div style="height:10px"></div>
+      <div class="note">
+        Dados de clientes são salvos automaticamente neste dispositivo.
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="section">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; margin-bottom:10px;">
+        <div>
+          <div class="title" style="font-size:13px;">Clientes por Localidade</div>
+          <div class="sub" id="countSub">Carregando...</div>
+        </div>
+      </div>
       <div id="allocList" class="list"></div>
     </div>
   </div>
 </div>
-
-<div class="modal-backdrop" id="modalBackdrop">
-  <div class="modal">
-    <h3 id="modalTitle">Adicionar Cliente</h3>
-    <div style="display:flex; flex-direction:column; gap:10px;">
-      <input id="fName" placeholder="Nome do Cliente (ex: MONTEBELLO)">
-      <input id="fRole" placeholder="Segmento">
-      <select id="fStatus"><option value="ACTIVE">ATIVO</option><option value="INACTIVE">INATIVO</option></select>
-      <button class="btn primary" id="btnSave">Salvar Cliente</button>
-      <button class="btn" onclick="document.getElementById('modalBackdrop').style.display='none'">Cancelar</button>
+</div>
+<div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+<div class="modal">
+<div class="modal-head">
+<div class="t" id="modalTitle">Adicionar cliente</div>
+<button class="btn" id="btnCloseModal">Fechar</button>
+</div>
+  <div class="modal-body">
+    <div class="field">
+      <label>Selecionar Cliente</label>
+      <select id="fClientSelect">
+        <option value="NEW">+ Novo Cliente</option>
+      </select>
+    </div>
+    <div class="field" id="fNameWrap">
+      <label>Nome do Novo Cliente</label>
+      <input id="fName" placeholder="Ex.: Nome do Cliente" />
+    </div>
+    <div class="field">
+      <label>Segmento/Tipo</label>
+      <input id="fRole" placeholder="Ex.: Varejo / Atacado" />
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select id="fStatus">
+        <option value="ACTIVE">ATIVO</option>
+        <option value="INACTIVE">INATIVO</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Tipo de alocação</label>
+      <select id="fType">
+        <option value="MUNICIPIO">Município selecionado</option>
+        <option value="REGIAO">Região (campo do GeoJSON)</option>
+      </select>
+    </div>
+    <div class="field" id="regionFieldWrap" style="display:none;">
+      <label>Campo de região</label>
+      <select id="fRegionField"></select>
+    </div>
+    <div class="field" id="regionValueWrap" style="display:none;">
+      <label>Valor da região</label>
+      <input id="fRegionValue" placeholder="Ex.: Registro / Campinas / ..." />
+    </div>
+    <div class="field">
+      <label>Alocação selecionada</label>
+      <input id="fTarget" disabled />
+    </div>
+    <div class="field">
+      <label>ID (opcional)</label>
+      <input id="fId" placeholder="Ex.: EMP012" />
+    </div>
+  </div>
+  <div class="modal-foot">
+    <div class="note" id="modalNote">
+      O cadastro será salvo neste dispositivo.
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn danger" id="btnDelete" style="display:none;">Excluir</button>
+      <button class="btn primary" id="btnSave">Salvar</button>
     </div>
   </div>
 </div>
-
+</div>
 <div class="toast" id="toast"></div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+const SP_URL = './sp.json';
 const MUNICIPIOS_URL = './sp_municipios_2024.geojson';
-const STORAGE_KEY = 'sp_map_data_v3';
-
-let db = JSON.parse(localStorage.getItem(STORAGE_KEY)) || { clients: {} };
-let municipiosGeo, selectedCode, map, municipiosLayer;
-
-function generateColor() {
-  return `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`;
+const EMPREGADOS_URL = './employee_index.json';
+const STORAGE_KEY = 'sp_allocations_v2';
+const CLIENT_COLORS = [
+  '#E53935', '#FB8C00', '#FDD835', '#43A047', '#1E88E5',
+  '#8E24AA', '#00ACC1', '#D81B60', '#F57C00', '#5E35B1',
+  '#00897B', '#C2185B'
+];
+let FIELD_NOME = null;
+let FIELD_CODIGO = null;
+const REGION_FIELD_CANDIDATES = ['NM_MICRO','NM_IMEDIAT','NM_REGIAO','REGIAO','MICRO','IMEDIAT','NM_MESO','NM_RGI','NM_RGI_IM'];
+let municipiosGeo = null;
+let spOutlineLayer = null;
+let municipiosLayer = null;
+let selectedCode = null;
+let selectedFeature = null;
+let db = { updatedAt: null, clients: {} };
+let codeToFeature = new Map();
+let nameIndex = [];
+let regionIndex = new Map();
+let muniStats = new Map();
+const $ = (id) => document.getElementById(id);
+const btnAdd = $('btnAdd');
+const searchInput = $('searchInput');
+const searchResults = $('searchResults');
+const btnClearSearch = $('btnClearSearch');
+const selSub = $('selSub');
+const selNome = $('selNome');
+const selCodigo = $('selCodigo');
+const selRegiao = $('selRegiao');
+const pillSelected = $('pillSelected');
+const pillHasActive = $('pillHasActive');
+const pillOnlyInactive = $('pillOnlyInactive');
+const pillNone = $('pillNone');
+const allocList = $('allocList');
+const countSub = $('countSub');
+const btnZoomSP = $('btnZoomSP');
+const modalBackdrop = $('modalBackdrop');
+const btnCloseModal = $('btnCloseModal');
+const btnSave = $('btnSave');
+const btnDelete = $('btnDelete');
+const modalTitle = $('modalTitle');
+const fName = $('fName');
+const fRole = $('fRole');
+const fStatus = $('fStatus');
+const fType = $('fType');
+const fRegionField = $('fRegionField');
+const fRegionValue = $('fRegionValue');
+const fTarget = $('fTarget');
+const fId = $('fId');
+const fClientSelect = $('fClientSelect');
+const fNameWrap = $('fNameWrap');
+const regionFieldWrap = $('regionFieldWrap');
+const regionValueWrap = $('regionValueWrap');
+const toast = $('toast');
+let editingClientId = null;
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._t);
+  toast._t = setTimeout(() => toast.classList.remove('show'), 2200);
 }
-
-function showToast(m){ 
-  const t = document.getElementById('toast'); 
-  t.textContent = m; t.style.display='block'; 
-  setTimeout(()=>t.style.display='none', 2000); 
+function normalize(str){
+  return String(str || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase().trim();
 }
-
-function save(){ 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); 
-  rebuildStats();
-  if(municipiosLayer) municipiosLayer.setStyle(styleFeature);
+function nowIso(){
+  return new Date().toISOString();
 }
-
-function rebuildStats(){
-  window.muniStats = new Map();
-  Object.keys(db.clients).forEach(id => {
-    const c = db.clients[id];
-    c.codes.forEach(code => {
-      if(!muniStats.has(code)) muniStats.set(code, []);
-      muniStats.get(code).push(c);
-    });
-  });
+function safeStr(v){
+  if (v === null || v === undefined) return '';
+  return String(v);
 }
-
-function styleFeature(f){
-  const code = f.properties.CD_MUN || f.properties.cod_municipio || f.properties.codigo_ibge;
-  const stats = muniStats.get(String(code));
-  let color = '#bdbdbd';
-  if(stats && stats.length > 0){
-    color = stats.some(c => c.status === 'ACTIVE') ? '#2e7d32' : '#c62828';
+function getNextClientColor(){
+  const clientCount = Object.keys(db.clients).length;
+  return CLIENT_COLORS[clientCount % CLIENT_COLORS.length];
+}
+function getColorClass(colorIndex){
+  return `color-${(colorIndex % CLIENT_COLORS.length) + 1}`;
+}
+function getColorFromHex(hex){
+  const idx = CLIENT_COLORS.indexOf(hex);
+  return idx >= 0 ? idx : 0;
+}
+function detectFields(geo){
+  const f = geo.features?.[0];
+  const props = f?.properties || {};
+  const keys = Object.keys(props);
+  FIELD_NOME =
+    keys.find(k => /NM.*MUN/i.test(k)) ||
+    keys.find(k => /NOME/i.test(k)) ||
+    'NM_MUN';
+  FIELD_CODIGO =
+    keys.find(k => /(CD|COD).*MUN/i.test(k)) ||
+    keys.find(k => /IBGE/i.test(k)) ||
+    'CD_MUN';
+  return { keys };
+}
+function getNome(props){
+  return safeStr(props?.[FIELD_NOME]) || 'Município';
+}
+function getCodigo(props){
+  return safeStr(props?.[FIELD_CODIGO]).trim();
+}
+function buildIndexes(){
+  codeToFeature = new Map();
+  nameIndex = [];
+  regionIndex = new Map();
+  const { keys } = detectFields(municipiosGeo);
+  const availableRegionFields = REGION_FIELD_CANDIDATES.filter(c => keys.includes(c));
+  for (const rf of availableRegionFields){
+    regionIndex.set(rf, new Map());
   }
-  return { fillColor: color, fillOpacity: 0.7, color: '#fff', weight: 1 };
+  for (const ft of municipiosGeo.features || []){
+    const code = getCodigo(ft.properties);
+    const name = getNome(ft.properties);
+    if (!code) continue;
+    codeToFeature.set(code, ft);
+    nameIndex.push({ nameKey: normalize(name), name, code });
+    for (const rf of availableRegionFields){
+      const val = safeStr(ft.properties?.[rf]).trim();
+      if (!val) continue;
+      const byValue = regionIndex.get(rf);
+      if (!byValue.has(val)) byValue.set(val, new Set());
+      byValue.get(val).add(code);
+    }
+  }
+  fRegionField.innerHTML = '';
+  if (availableRegionFields.length){
+    for (const rf of availableRegionFields){
+      const opt = document.createElement('option');
+      opt.value = rf;
+      opt.textContent = rf;
+      fRegionField.appendChild(opt);
+    }
+  } else {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Nenhum campo de região encontrado';
+    fRegionField.appendChild(opt);
+  }
 }
-
-async function init(){
-  map = L.map('map').setView([-23.55, -46.63], 7);
+function loadDbFromLocalStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed.clients !== 'object') return false;
+    db = parsed;
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+function saveDbToLocalStorage(){
+  db.updatedAt = nowIso();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+}
+async function tryLoadInitialEmployeeIndex(){
+  try{
+    const r = await fetch(EMPREGADOS_URL, { cache:'no-store' });
+    if (!r.ok) return false;
+    const j = await r.json();
+    if (!db.clients || Object.keys(db.clients).length === 0){
+      const clients = j.clients || {};
+      let colorIndex = 0;
+      for (const id in clients){
+        if (!clients[id].color){
+          clients[id].color = CLIENT_COLORS[colorIndex % CLIENT_COLORS.length];
+          colorIndex++;
+        }
+      }
+      db = {
+        updatedAt: j.updatedAt || nowIso(),
+        clients: clients
+      };
+      saveDbToLocalStorage();
+      showToast('Dados dos clientes carregados com sucesso');
+    }
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+function expandAssignmentToCodes(assignment){
+  if (!assignment) return [];
+  if (assignment.type === 'MUNICIPIO'){
+    const code = String(assignment.code || '').trim();
+    return code ? [code] : [];
+  }
+  if (assignment.type === 'REGIAO'){
+    const field = assignment.field;
+    const value = assignment.value;
+    const byField = regionIndex.get(field);
+    if (!byField) return [];
+    const set = byField.get(value);
+    return set ? Array.from(set) : [];
+  }
+  return [];
+}
+function rebuildStats(){
+  muniStats = new Map();
+  function ensure(code){
+    if (!muniStats.has(code)){
+      muniStats.set(code, { activeCount:0, totalCount:0, clients:[] });
+    }
+    return muniStats.get(code);
+  }
+  for (const id in db.clients){
+    const client = db.clients[id];
+    const st = (client.status || 'ACTIVE').toUpperCase();
+    const assignments = client.assignments || (client.assignment ? [client.assignment] : []);
+    for (const assignment of assignments){
+      const codes = expandAssignmentToCodes(assignment);
+      for (const code of codes){
+        const entry = ensure(code);
+        entry.totalCount += 1;
+        if (st === 'ACTIVE') entry.activeCount += 1;
+        entry.clients.push({ ...client, id });
+      }
+    }
+  }
+}
+function getMunicipioRegionSummary(props){
+  for (const rf of REGION_FIELD_CANDIDATES){
+    const v = props?.[rf];
+    if (v) return `${rf}: ${v}`;
+  }
+  return '-';
+}
+function fillColorForCode(code){
+  const entry = muniStats.get(code);
+  if (!entry) return getComputedStyle(document.documentElement).getPropertyValue('--c-none').trim();
+  if (entry.activeCount > 0) return getComputedStyle(document.documentElement).getPropertyValue('--c-active').trim();
+  return getComputedStyle(document.documentElement).getPropertyValue('--c-inactive').trim();
+}
+function styleMunicipio(feature){
+  const code = getCodigo(feature.properties);
+  const baseFill = fillColorForCode(code);
+  const isSelected = selectedCode && code === selectedCode;
+  return {
+    color: isSelected ? getComputedStyle(document.documentElement).getPropertyValue('--c-selected').trim() : '#ffffff',
+    weight: isSelected ? 3 : 0.8,
+    opacity: 1,
+    fillColor: baseFill,
+    fillOpacity: isSelected ? 0.28 : 0.72
+  };
+}
+function highlightFeature(e){
+  const layer = e.target;
+  layer.setStyle({ weight: 2.2, color:'#111827', fillOpacity: 0.82 });
+  layer.bringToFront();
+}
+function resetHighlight(e){
+  if (municipiosLayer) municipiosLayer.resetStyle(e.target);
+}
+function selectMunicipioByFeature(feature, layer){
+  selectedFeature = feature;
+  selectedCode = getCodigo(feature.properties);
+  btnAdd.disabled = !selectedCode;
+  const name = getNome(feature.properties);
+  selSub.textContent = `Selecionado: ${name}`;
+  selNome.textContent = name;
+  selCodigo.textContent = selectedCode || '-';
+  selRegiao.textContent = getMunicipioRegionSummary(feature.properties);
+  pillSelected.style.display = selectedCode ? 'inline-flex' : 'none';
+  const entry = muniStats.get(selectedCode);
+  pillHasActive.style.display = (entry && entry.activeCount > 0) ? 'inline-flex' : 'none';
+  pillOnlyInactive.style.display = (entry && entry.totalCount > 0 && entry.activeCount === 0) ? 'inline-flex' : 'none';
+  pillNone.style.display = (!entry) ? 'inline-flex' : 'none';
+  if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
+  if (layer){
+    const bounds = layer.getBounds();
+    map.fitBounds(bounds, { padding:[40,40], maxZoom: 11, animate:true, duration:0.6 });
+  }
+  renderAllocationsPanel();
+}
+function onMunicipioClick(e){
+  const layer = e.target;
+  const feature = layer.feature;
+  selectMunicipioByFeature(feature, layer);
+}
+function renderSearchResults(items){
+  searchResults.innerHTML = '';
+  if (!items.length){
+    const div = document.createElement('div');
+    div.className = 'muted';
+    div.style.padding = '8px';
+    div.textContent = 'Nenhum município encontrado.';
+    searchResults.appendChild(div);
+    return;
+  }
+  for (const item of items.slice(0, 8)){
+    const div = document.createElement('div');
+    div.className = 'item link';
+    div.style.padding = '8px 10px';
+    div.textContent = item.name;
+    div.onclick = () => {
+      const ft = codeToFeature.get(item.code);
+      if (ft){
+        const layer = municipiosLayer.getLayers().find(l => getCodigo(l.feature.properties) === item.code);
+        selectMunicipioByFeature(ft, layer);
+        searchInput.value = '';
+        searchResults.innerHTML = '';
+      }
+    };
+    searchResults.appendChild(div);
+  }
+}
+function renderAllocationsPanel(){
+  allocList.innerHTML = '';
+  const entry = muniStats.get(selectedCode);
+  if (!entry || !entry.clients.length){
+    countSub.textContent = 'Nenhum cliente alocado.';
+    return;
+  }
+  countSub.textContent = `${entry.clients.length} cliente(s) nesta localidade.`;
+  for (const client of entry.clients){
+    const colorIdx = getColorFromHex(client.color);
+    const colorClass = getColorClass(colorIdx);
+    const colorDot = client.color || '#999';
+    const isActive = client.status === 'ACTIVE';
+    const div = document.createElement('div');
+    div.className = `item ${colorClass}`;
+    div.innerHTML = `
+      <div class="row">
+        <div style="flex:1;">
+          <div class="name">
+            <span class="color-dot" style="background:${colorDot};"></span>
+            ${client.name}
+          </div>
+          <div class="meta">${client.role}</div>
+          <div class="pill ${isActive ? 'green' : 'red'}" style="margin-top:6px; font-size:10px;">
+            ${isActive ? 'ATIVO' : 'INATIVO'}
+          </div>
+        </div>
+        <div class="actions">
+          <span class="link" onclick="openEditModal('${client.id}')">Editar</span>
+        </div>
+      </div>
+    `;
+    allocList.appendChild(div);
+  }
+}
+function updateClientSelect(){
+  fClientSelect.innerHTML = '<option value="NEW">+ Novo Cliente</option>';
+  const sortedIds = Object.keys(db.clients).sort((a, b) => 
+    db.clients[a].name.localeCompare(db.clients[b].name)
+  );
+  for (const id of sortedIds){
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = db.clients[id].name;
+    fClientSelect.appendChild(opt);
+  }
+}
+function onClientSelectChange(){
+  const val = fClientSelect.value;
+  if (val === 'NEW'){
+    fNameWrap.style.display = 'block';
+    fName.value = '';
+    fRole.value = '';
+    fId.value = '';
+    fStatus.value = 'ACTIVE';
+  } else {
+    fNameWrap.style.display = 'none';
+    const client = db.clients[val];
+    fName.value = client.name;
+    fRole.value = client.role;
+    fId.value = val;
+    fStatus.value = client.status;
+  }
+}
+function openAddModal(){
+  if (!selectedCode) return;
+  editingClientId = null;
+  modalTitle.textContent = 'Adicionar cliente';
+  btnDelete.style.display = 'none';
+  updateClientSelect();
+  fClientSelect.value = 'NEW';
+  onClientSelectChange();
+  fType.value = 'MUNICIPIO';
+  updateModalFields();
+  modalBackdrop.style.display = 'flex';
+}
+function openEditModal(id){
+  const client = db.clients[id];
+  if (!client) return;
+  editingClientId = id;
+  modalTitle.textContent = 'Editar cliente';
+  btnDelete.style.display = 'block';
+  updateClientSelect();
+  fClientSelect.value = id;
+  fNameWrap.style.display = 'none';
+  fName.value = client.name;
+  fRole.value = client.role;
+  fStatus.value = client.status;
+  fId.value = id;
+  const assignment = client.assignments?.[0] || client.assignment || { type:'MUNICIPIO', code: selectedCode };
+  fType.value = assignment.type;
+  if (assignment.type === 'REGIAO'){
+    fRegionField.value = assignment.field;
+    fRegionValue.value = assignment.value;
+  }
+  updateModalFields();
+  modalBackdrop.style.display = 'flex';
+}
+function updateModalFields(){
+  const type = fType.value;
+  regionFieldWrap.style.display = type === 'REGIAO' ? 'block' : 'none';
+  regionValueWrap.style.display = type === 'REGIAO' ? 'block' : 'none';
+  if (type === 'MUNICIPIO'){
+    fTarget.value = selNome.textContent;
+  } else {
+    fTarget.value = 'Baseado em campo regional';
+  }
+}
+function saveClient(){
+  const name = fName.value.trim();
+  if (!name){
+    showToast('O nome é obrigatório.');
+    return;
+  }
+  const id = fId.value.trim() || 'CLI_' + Math.random().toString(36).substr(2, 9).toUpperCase();
+  const assignment = fType.value === 'MUNICIPIO' 
+    ? { type: 'MUNICIPIO', code: String(selectedCode) }
+    : { type: 'REGIAO', field: fRegionField.value, value: fRegionValue.value.trim() };
+  if (db.clients[id]){
+    if (!db.clients[id].assignments) db.clients[id].assignments = [];
+    const alreadyHas = db.clients[id].assignments.some(a => {
+      if (a.type !== assignment.type) return false;
+      if (a.type === 'MUNICIPIO') return String(a.code) === String(assignment.code);
+      return a.field === assignment.field && a.value === assignment.value;
+    });
+    if (!alreadyHas){
+      db.clients[id].assignments.push(assignment);
+    }
+    db.clients[id].name = name;
+    db.clients[id].role = fRole.value.trim();
+    db.clients[id].status = fStatus.value;
+  } else {
+    const newColor = getNextClientColor();
+    db.clients[id] = {
+      name: name,
+      role: fRole.value.trim(),
+      status: fStatus.value,
+      color: newColor,
+      assignments: [assignment]
+    };
+  }
+  if (editingClientId && editingClientId !== id){
+    delete db.clients[editingClientId];
+  }
+  saveDbToLocalStorage();
   rebuildStats();
-  try {
-    const r = await fetch(MUNICIPIOS_URL);
-    municipiosGeo = await r.json();
-    municipiosLayer = L.geoJSON(municipiosGeo, {
-      style: styleFeature,
-      onEachFeature: (f, l) => {
-        l.on('click', () => {
-          selectedCode = String(f.properties.CD_MUN || f.properties.cod_municipio || f.properties.codigo_ibge);
-          document.getElementById('selNome').textContent = f.properties.NM_MUN || f.properties.nome;
-          document.getElementById('selCodigo').textContent = selectedCode;
-          document.getElementById('btnAdd').disabled = false;
-          renderList();
+  municipiosLayer.setStyle(styleMunicipio);
+  renderAllocationsPanel();
+  modalBackdrop.style.display = 'none';
+  showToast('Cliente salvo com sucesso!');
+}
+function deleteClient(){
+  if (!editingClientId) return;
+  if (!confirm('Tem certeza que deseja excluir este cliente?')) return;
+  delete db.clients[editingClientId];
+  saveDbToLocalStorage();
+  rebuildStats();
+  municipiosLayer.setStyle(styleMunicipio);
+  renderAllocationsPanel();
+  modalBackdrop.style.display = 'none';
+  showToast('Cliente excluído.');
+}
+const map = L.map('map', {
+  center: [-23.55, -46.63],
+  zoom: 7,
+  zoomControl: false,
+  attributionControl: false,
+  maxBoundsViscosity: 1.0
+});
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+async function init(){
+  try{
+    const [spRes, muniRes] = await Promise.all([
+      fetch(SP_URL).then(r => r.json()),
+      fetch(MUNICIPIOS_URL).then(r => r.json())
+    ]);
+    municipiosGeo = muniRes;
+    buildIndexes();
+    
+    loadDbFromLocalStorage();
+    await tryLoadInitialEmployeeIndex();
+    rebuildStats();
+
+    spOutlineLayer = L.geoJSON(spRes, {
+      style: { color: '#1e3a8a', weight: 2, fill: false, opacity: 0.4 },
+      interactive: false
+    }).addTo(map);
+
+    municipiosLayer = L.geoJSON(muniRes, {
+      style: styleMunicipio,
+      onEachFeature: (feature, layer) => {
+        layer.on({
+          mouseover: highlightFeature,
+          mouseout: resetHighlight,
+          click: onMunicipioClick
         });
       }
     }).addTo(map);
-    map.fitBounds(municipiosLayer.getBounds());
-  } catch(e) { showToast("Erro ao carregar mapa."); }
-}
 
-function renderList(){
-  const list = document.getElementById('allocList');
-  list.innerHTML = '';
-  const clients = muniStats.get(selectedCode) || [];
-  clients.forEach(c => {
-    const item = document.createElement('div');
-    item.className = 'item';
-    item.style.borderLeftColor = c.color;
-    item.innerHTML = `
-      <div class="name"><span class="color-dot" style="background:${c.color}"></span> ${c.name}</div>
-      <div class="sub">${c.role}</div>
-      <div class="pill ${c.status==='ACTIVE'?'green':'red'}">${c.status}</div>
-    `;
-    list.appendChild(item);
-  });
-}
+    // ✅ FORCE RE-RENDER: Reapliar estilo para cada feature
+    municipiosLayer.eachLayer((layer) => {
+      layer.setStyle(styleMunicipio(layer.feature));
+    });
 
-document.getElementById('btnAdd').onclick = () => document.getElementById('modalBackdrop').style.display='flex';
+    map.fitBounds(spOutlineLayer.getBounds(), {
+      padding: [10, 10],
+      animate: false
+    });
+    
+    map.setMaxBounds(spOutlineLayer.getBounds().pad(0.1));
+    countSub.textContent = 'Selecione um município no mapa.';
 
-document.getElementById('btnSave').onclick = () => {
-  const name = document.getElementById('fName').value.trim();
-  const role = document.getElementById('fRole').value.trim();
-  const status = document.getElementById('fStatus').value;
-  if(!name) return showToast("Digite o nome");
-
-  const id = name.toUpperCase().replace(/\s+/g, '_');
-  if(!db.clients[id]){
-    db.clients[id] = { name, role, status, color: generateColor(), codes: [selectedCode] };
-  } else {
-    if(!db.clients[id].codes.includes(selectedCode)) db.clients[id].codes.push(selectedCode);
+  }catch(e){
+    console.error(e);
+    showToast('Erro ao carregar dados geográficos.');
   }
-  
-  save();
-  renderList();
-  document.getElementById('modalBackdrop').style.display='none';
-  showToast("Salvo!");
+}
+btnAdd.onclick = openAddModal;
+btnCloseModal.onclick = () => modalBackdrop.style.display = 'none';
+btnSave.onclick = saveClient;
+btnDelete.onclick = deleteClient;
+fType.onchange = updateModalFields;
+fClientSelect.onchange = onClientSelectChange;
+btnZoomSP.onclick = () => {
+  if (spOutlineLayer) map.fitBounds(spOutlineLayer.getBounds(), { 
+    padding: [10, 10],
+    animate: true 
+  });
 };
-
+searchInput.oninput = (e) => {
+  const val = normalize(e.target.value);
+  if (val.length < 2){
+    searchResults.innerHTML = '';
+    return;
+  }
+  const matches = nameIndex.filter(x => x.nameKey.includes(val));
+  renderSearchResults(matches);
+};
+btnClearSearch.onclick = () => {
+  searchInput.value = '';
+  searchResults.innerHTML = '';
+};
 init();
 </script>
 </body>
