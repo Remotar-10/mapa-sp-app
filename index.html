@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>São Paulo | Clientes por Município</title>
 
+
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
 
 <style>
 :root{
@@ -19,6 +21,20 @@
   --c-active:#2e7d32;
 
   --c-selected:#ff6f00;
+
+  /* Paleta de cores para clientes */
+  --color-1: #E53935;
+  --color-2: #FB8C00;
+  --color-3: #FDD835;
+  --color-4: #43A047;
+  --color-5: #1E88E5;
+  --color-6: #8E24AA;
+  --color-7: #00ACC1;
+  --color-8: #D81B60;
+  --color-9: #F57C00;
+  --color-10: #5E35B1;
+  --color-11: #00897B;
+  --color-12: #C2185B;
 }
 
 html, body { height:100%; margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
@@ -176,23 +192,52 @@ input, .input{
 }
 
 .item{
-  border:1px solid rgba(17,24,39,.10);
+  border:2px solid #e5e7eb;
   border-radius:10px;
   padding:10px 10px;
   background:#fff;
+  transition: border-color 0.2s ease;
 }
+
+/* Cores dinâmicas para itens */
+.item.color-1{ border-color: #E53935; border-left: 4px solid #E53935; }
+.item.color-2{ border-color: #FB8C00; border-left: 4px solid #FB8C00; }
+.item.color-3{ border-color: #FDD835; border-left: 4px solid #FDD835; }
+.item.color-4{ border-color: #43A047; border-left: 4px solid #43A047; }
+.item.color-5{ border-color: #1E88E5; border-left: 4px solid #1E88E5; }
+.item.color-6{ border-color: #8E24AA; border-left: 4px solid #8E24AA; }
+.item.color-7{ border-color: #00ACC1; border-left: 4px solid #00ACC1; }
+.item.color-8{ border-color: #D81B60; border-left: 4px solid #D81B60; }
+.item.color-9{ border-color: #F57C00; border-left: 4px solid #F57C00; }
+.item.color-10{ border-color: #5E35B1; border-left: 4px solid #5E35B1; }
+.item.color-11{ border-color: #00897B; border-left: 4px solid #00897B; }
+.item.color-12{ border-color: #C2185B; border-left: 4px solid #C2185B; }
+
 .item .row{
   display:flex;
   justify-content:space-between;
   gap:10px;
   align-items:flex-start;
 }
+
 .item .name{
+  display:flex;
+  align-items:center;
+  gap:8px;
   font-weight:950;
   color:#111827;
   font-size:13px;
   line-height:1.2;
 }
+
+.color-dot{
+  display:inline-block;
+  width:12px;
+  height:12px;
+  border-radius:999px;
+  flex-shrink:0;
+}
+
 .item .meta{
   font-size:12px;
   color:var(--muted);
@@ -473,7 +518,14 @@ const SP_URL = './sp.json';
 const MUNICIPIOS_URL = './sp_municipios_2024.geojson';
 const EMPREGADOS_URL = './employee_index.json';
 
-const STORAGE_KEY = 'sp_allocations_v2'; // Nova versão para a nova estrutura
+const STORAGE_KEY = 'sp_allocations_v2';
+
+// Paleta de cores para clientes
+const CLIENT_COLORS = [
+  '#E53935', '#FB8C00', '#FDD835', '#43A047', '#1E88E5',
+  '#8E24AA', '#00ACC1', '#D81B60', '#F57C00', '#5E35B1',
+  '#00897B', '#C2185B'
+];
 
 let FIELD_NOME = null;
 let FIELD_CODIGO = null;
@@ -487,7 +539,6 @@ let municipiosLayer = null;
 let selectedCode = null;
 let selectedFeature = null;
 
-// Nova estrutura de DB baseada em mapa (objeto)
 let db = { updatedAt: null, clients: {} };
 
 let codeToFeature = new Map();
@@ -561,6 +612,20 @@ function nowIso(){
 function safeStr(v){
   if (v === null || v === undefined) return '';
   return String(v);
+}
+
+function getNextClientColor(){
+  const clientCount = Object.keys(db.clients).length;
+  return CLIENT_COLORS[clientCount % CLIENT_COLORS.length];
+}
+
+function getColorClass(colorIndex){
+  return `color-${(colorIndex % CLIENT_COLORS.length) + 1}`;
+}
+
+function getColorFromHex(hex){
+  const idx = CLIENT_COLORS.indexOf(hex);
+  return idx >= 0 ? idx : 0;
 }
 
 function detectFields(geo){
@@ -658,7 +723,6 @@ async function tryLoadInitialEmployeeIndex(){
     if (!r.ok) return false;
     const j = await r.json();
     
-    // Se o DB local estiver vazio ou for a versão antiga, carregar do JSON
     if (!db.clients || Object.keys(db.clients).length === 0){
       db = {
         updatedAt: j.updatedAt || nowIso(),
@@ -704,7 +768,6 @@ function rebuildStats(){
     const client = db.clients[id];
     const st = (client.status || 'ACTIVE').toUpperCase();
     
-    // Suportar tanto a estrutura antiga (assignment único) quanto a nova (assignments array)
     const assignments = client.assignments || (client.assignment ? [client.assignment] : []);
     
     for (const assignment of assignments){
@@ -835,14 +898,21 @@ function renderAllocationsPanel(){
   countSub.textContent = `${entry.clients.length} cliente(s) nesta localidade.`;
 
   for (const client of entry.clients){
-    const div = document.createElement('div');
-    div.className = 'item';
+    const colorIdx = getColorFromHex(client.color);
+    const colorClass = getColorClass(colorIdx);
+    const colorDot = client.color || '#999';
     const isActive = client.status === 'ACTIVE';
+    
+    const div = document.createElement('div');
+    div.className = `item ${colorClass}`;
     
     div.innerHTML = `
       <div class="row">
-        <div>
-          <div class="name">${client.name}</div>
+        <div style="flex:1;">
+          <div class="name">
+            <span class="color-dot" style="background:${colorDot};"></span>
+            ${client.name}
+          </div>
           <div class="meta">${client.role}</div>
           <div class="pill ${isActive ? 'green' : 'red'}" style="margin-top:6px; font-size:10px;">
             ${isActive ? 'ATIVO' : 'INATIVO'}
@@ -956,14 +1026,9 @@ function saveClient(){
     ? { type: 'MUNICIPIO', code: String(selectedCode) }
     : { type: 'REGIAO', field: fRegionField.value, value: fRegionValue.value.trim() };
 
-  console.log('Salvando alocação:', assignment, 'para o cliente:', id);
-
-  // Se o cliente já existe, adicionar a nova alocação à lista dele
   if (db.clients[id]){
-    // Garantir que assignments existe
     if (!db.clients[id].assignments) db.clients[id].assignments = [];
     
-    // Evitar duplicar a mesma alocação exata
     const alreadyHas = db.clients[id].assignments.some(a => {
       if (a.type !== assignment.type) return false;
       if (a.type === 'MUNICIPIO') return String(a.code) === String(assignment.code);
@@ -972,27 +1037,23 @@ function saveClient(){
 
     if (!alreadyHas){
       db.clients[id].assignments.push(assignment);
-      console.log('Nova alocação adicionada ao cliente existente.');
-    } else {
-      console.log('Cliente já possui esta alocação.');
     }
     
-    // Atualizar outros campos se mudaram
     db.clients[id].name = name;
     db.clients[id].role = fRole.value.trim();
     db.clients[id].status = fStatus.value;
   } else {
-    // Novo cliente
+    // Novo cliente - atribuir cor
+    const newColor = getNextClientColor();
     db.clients[id] = {
       name: name,
       role: fRole.value.trim(),
       status: fStatus.value,
+      color: newColor,
       assignments: [assignment]
     };
-    console.log('Novo cliente criado com alocação.');
   }
 
-  // Se estiver editando e o ID mudou, remover o antigo (caso de renomear ID)
   if (editingClientId && editingClientId !== id){
     delete db.clients[editingClientId];
   }
@@ -1025,7 +1086,7 @@ const map = L.map('map', {
   center: [-23.55, -46.63],
   zoom: 7,
   zoomControl: false,
-  attributionControl: false, // Remover atribuição para ganhar espaço
+  attributionControl: false,
   maxBoundsViscosity: 1.0
 });
 
@@ -1061,13 +1122,11 @@ async function init(){
       }
     }).addTo(map);
 
-    // Ajustar o enquadramento com padding mínimo para preencher a tela
     map.fitBounds(spOutlineLayer.getBounds(), {
       padding: [10, 10],
       animate: false
     });
     
-    // Definir limites máximos para evitar que o usuário arraste para fora do estado
     map.setMaxBounds(spOutlineLayer.getBounds().pad(0.1));
     countSub.textContent = 'Selecione um município no mapa.';
 
