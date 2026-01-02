@@ -740,6 +740,8 @@ async function tryLoadInitialEmployeeIndex(){
         clients: clients
       };
       saveDbToLocalStorage();
+      rebuildStats();
+      if (municipiosLayer) municipiosLayer.setStyle(styleMunicipio);
       showToast('Dados dos clientes carregados com sucesso');
     }
     return true;
